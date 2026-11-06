@@ -2,53 +2,47 @@
 requires = ["setuptools>=77.0.3", "wheel"]
 build-backend = "setuptools.build_meta"
 
-
 [project]
-
-name = "bohr-atom"
-
+name = "bohr-atom-toolkit"
 version = "0.1.0"
-
-description = "Bohr atomic model calculations for hydrogen-like atoms"
-
+description = "Implementación computacional del modelo de Bohr para átomos hidrogenoides"
 readme = "README.md"
-
 requires-python = ">=3.11"
-
 dependencies = [
-    "matplotlib>=3.8"
+    "matplotlib>=3.8",
+    "numpy>=1.26",
 ]
 
-
 [project.optional-dependencies]
-
 dev = [
     "pytest>=8.0",
     "pytest-cov>=5.0",
     "ruff>=0.6",
-    "jupyterlab>=4.0"
+    "build>=1.2",
+    "twine>=5.0",
+]
+notebooks = [
+    "jupyterlab>=4.0",
+    "ipywidgets>=8.1",
+    "ipython>=8.0",
+    "pandas>=2.2",
 ]
 
+[project.urls]
+Homepage = "https://github.com/TU_USUARIO/Bohr-Atom"
+Repository = "https://github.com/TU_USUARIO/Bohr-Atom"
+Issues = "https://github.com/TU_USUARIO/Bohr-Atom/issues"
 
 [tool.setuptools.packages.find]
-
 where = ["src"]
 
-
 [tool.pytest.ini_options]
-
 testpaths = ["tests"]
-
 addopts = "-ra"
 
-
 [tool.ruff]
-
 line-length = 88
-
 target-version = "py311"
 
-
 [tool.ruff.lint]
-
 select = ["E", "F", "I", "B", "UP"]

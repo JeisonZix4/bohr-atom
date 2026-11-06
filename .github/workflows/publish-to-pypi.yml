@@ -1,8 +1,5 @@
-# Publica Bohr-Atom en PyPI cuando se envía una etiqueta v*.
-# En pull requests y pushes a main ejecuta pruebas y construye el paquete,
-# pero no publica en PyPI.
 
-name: Publicar Bohr-Atom en PyPI
+name: CI and Publish Bohr-Atom to PyPI
 
 on:
   push:
@@ -10,6 +7,7 @@ on:
       - main
     tags:
       - "v*"
+
   pull_request:
     branches:
       - main
@@ -18,118 +16,150 @@ permissions:
   contents: read
 
 jobs:
-  # Verifica el código en todas las versiones de Python declaradas.
+
+  # ==================================================
+  # 1. TEST: Pruebas y calidad del código
+  # ==================================================
+
   test:
-    name: Pruebas con Python ${{ matrix.python-version }}
+    name: Tests - Python ${{ matrix.python-version }}
+
     runs-on: ubuntu-latest
+
     strategy:
       fail-fast: false
       matrix:
         python-version: ["3.11", "3.12", "3.13", "3.14"]
 
     steps:
-      - name: Descargar el repositorio
-        uses: actions/checkout@v7
+
+      - name: Descargar repositorio
+        uses: actions/checkout@v6
         with:
           persist-credentials: false
 
       - name: Configurar Python
-        uses: actions/setup-python@v7
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
-          cache: pip
 
-      - name: Instalar el proyecto y herramientas de desarrollo
+      - name: Instalar dependencias
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -e ".[dev]"
+          python -m pip install -e ".[dev,notebooks]"
 
       - name: Revisar calidad del código
-        run: python -m ruff check src tests
+        run: |
+          ruff check src tests
 
-      - name: Ejecutar pruebas automatizadas
-        run: python -m pytest -v
+      - name: Comprobar formato
+        run: |
+          ruff format --check src tests
 
-  # Construye y valida wheel y source distribution después de las pruebas.
+      - name: Ejecutar pruebas
+        run: |
+          pytest -v --cov=bohr_atom --cov-report=term-missing
+
+
+  # ==================================================
+  # 2. BUILD: Construcción de las distribuciones
+  # ==================================================
+
   build:
-    name: Construir distribuciones
+    name: Build Python distributions
+
     needs: test
+
     runs-on: ubuntu-latest
 
     steps:
-      - name: Descargar el repositorio
-        uses: actions/checkout@v7
+
+      - name: Descargar repositorio
+        uses: actions/checkout@v6
         with:
           persist-credentials: false
 
       - name: Configurar Python
-        uses: actions/setup-python@v7
+        uses: actions/setup-python@v6
         with:
           python-version: "3.14"
-
-      # Evita publicar una etiqueta cuya versión no coincida con pyproject.toml.
-      - name: Comprobar versión de lanzamiento
-        if: startsWith(github.ref, 'refs/tags/v')
-        env:
-          RELEASE_TAG: ${{ github.ref_name }}
-        run: |
-          python - <<'PY'
-          import os
-          import tomllib
-          from pathlib import Path
-
-          project = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
-          package_version = project["project"]["version"]
-          expected_tag = f"v{package_version}"
-          actual_tag = os.environ["RELEASE_TAG"]
-
-          if actual_tag != expected_tag:
-              raise SystemExit(
-                  f"La etiqueta {actual_tag!r} no coincide con "
-                  f"la versión {expected_tag!r} de pyproject.toml."
-              )
-
-          print(f"Versión validada: {package_version}")
-          PY
 
       - name: Instalar herramientas de construcción
         run: |
           python -m pip install --upgrade pip
           python -m pip install build twine
 
-      - name: Construir wheel y distribución fuente
-        run: python -m build
+      - name: Comprobar correspondencia entre etiqueta y versión
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          python - <<'PY'
+          import os
+          import tomllib
+          from pathlib import Path
 
-      - name: Validar metadatos de las distribuciones
-        run: python -m twine check dist/*
+          project = tomllib.loads(
+              Path("pyproject.toml").read_text(encoding="utf-8")
+          )["project"]
 
-      - name: Guardar distribuciones como artefacto
-        uses: actions/upload-artifact@v7
+          expected_tag = f"v{project['version']}"
+          actual_tag = os.environ["GITHUB_REF_NAME"]
+
+          if actual_tag != expected_tag:
+              raise SystemExit(
+                  f"Error: la etiqueta {actual_tag} no coincide "
+                  f"con la versión del proyecto {expected_tag}."
+              )
+
+          print(f"Versión validada: {expected_tag}")
+          PY
+
+      - name: Construir Wheel y Source Distribution
+        run: |
+          python -m build
+
+      - name: Validar distribuciones
+        run: |
+          python -m twine check dist/*
+
+      - name: Guardar distribuciones
+        uses: actions/upload-artifact@v5
         with:
           name: python-package-distributions
           path: dist/
           if-no-files-found: error
           retention-days: 1
 
-  # Solo se ejecuta al enviar una etiqueta v* y después de construir correctamente.
+
+  # ==================================================
+  # 3. PUBLISH: Publicación oficial en PyPI
+  # ==================================================
+
   publish:
     name: Publicar en PyPI
-    if: startsWith(github.ref, 'refs/tags/v')
+
+    # Ejecutar exclusivamente al enviar una etiqueta v*
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+
+    # Requiere que test y build hayan terminado correctamente
     needs: build
+
     runs-on: ubuntu-latest
 
     environment:
       name: pypi
 
     permissions:
+      contents: read
       id-token: write
 
     steps:
-      - name: Descargar distribuciones construidas
-        uses: actions/download-artifact@v8
+
+      - name: Descargar distribuciones
+        uses: actions/download-artifact@v6
         with:
           name: python-package-distributions
           path: dist/
 
-      - name: Publicar distribuciones en PyPI mediante Trusted Publishing
+      - name: Publicar paquete en PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+

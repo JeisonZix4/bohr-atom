@@ -1,68 +1,37 @@
-# Integración de la documentación de código en el repositorio existente
+# Integración del patrón Strategy en el código existente
 
-Esta entrega contiene una versión completa y documentada del paquete, sus pruebas
-y cinco notebooks de ejemplo. Está pensada para integrarse en el repositorio
-`Bohr-Atom` que ya existe en GitHub.
+Esta actualización modifica la implementación existente de `BohrAtom`. No añade un segundo modelo independiente ni requiere que el usuario invoque las estrategias después de crear el objeto.
 
-## Archivos incluidos
+## Archivos modificados
 
-- `src/bohr_atom/`: módulos de la biblioteca con docstrings y comentarios.
-- `tests/`: pruebas con docstrings para cada fixture y función de prueba.
-- `notebooks/`: cinco cuadernos con comentarios al inicio de cada celda ejecutable.
-- `docs/ESTILO_CODIGO.md`: convenciones de documentación aplicadas.
-- `.github/workflows/ci.yml`: ejemplo de integración continua.
-- `pyproject.toml`: dependencias y configuración del paquete.
-- `README.md`: documentación de referencia en español.
+- `src/bohr_atom/strategies.py`: define la interfaz `BohrCalculationStrategy` y las estrategias concretas. Las estrategias calculan energía, radio y velocidad angular mediante las funciones matemáticas compartidas.
+- `src/bohr_atom/atom.py`: integra la estrategia en el constructor y delega en ella los métodos `energy()`, `radius()` y `orbital_angular_frequency()`. Los métodos `transition()`, `energy_levels()`, gráficos y animaciones utilizan esos métodos de `BohrAtom`, por lo que también quedan sujetos a la estrategia.
+- `src/bohr_atom/__init__.py`: exporta la nueva interfaz pública.
+- `tests/test_strategies.py`: verifica la integración del patrón en la API existente.
+- `notebooks/02_niveles_energia_y_radios.ipynb`: muestra el uso del patrón dentro del cuaderno de niveles y radios ya existente.
+- `README.md`: documenta el patrón integrado y la API actualizada.
 
-## Integración recomendada
+## Archivos que dejan de ser necesarios
 
-1. Crea una rama nueva en tu repositorio:
+El notebook `notebooks/06_patron_strategy.ipynb` se elimina porque la demostración del patrón ahora está integrada en `02_niveles_energia_y_radios.ipynb`. No se cambia el nombre de ningún archivo preexistente.
+
+## Aplicación en un repositorio local
+
+1. Realiza un commit o una copia de seguridad de tus cambios locales.
+2. Copia los archivos de esta actualización sobre el repositorio, conservando sus rutas y nombres.
+3. Si existe el cuaderno independiente creado en la actualización anterior, elimínalo:
 
    ```bash
-   git switch main
-   git pull --ff-only origin main
-   git switch -c docs/docstrings-en-todo-el-proyecto
+   rm -f notebooks/06_patron_strategy.ipynb
    ```
 
-2. Respalda o confirma tus cambios locales antes de reemplazar módulos.
-
-3. Copia `src/bohr_atom/` y `tests/` desde esta entrega a la raíz del repositorio.
-   Si ya agregaste pruebas propias, conserva esos archivos y combina sus cambios.
-
-4. Copia los cinco notebooks a `notebooks/`.
-
-5. Integra `docs/ESTILO_CODIGO.md` y el workflow de `.github/workflows/ci.yml`.
-
-6. Compara `pyproject.toml` antes de reemplazarlo. El nombre de distribución de
-   esta plantilla es `bohr-atom-toolkit`; mantén el nombre que ya registraste en
-   PyPI si es diferente. El nombre del módulo Python sigue siendo `bohr_atom`.
-
-7. Instala dependencias y verifica:
+4. Instala el paquete en modo editable y ejecuta las pruebas:
 
    ```bash
    python -m pip install -e ".[dev,notebooks]"
    pytest -v
-   ruff check .
-   ruff format --check .
    ```
 
-8. Revisa el diff, haz commit y abre un Pull Request.
+## Compatibilidad
 
-## Convención de documentación
-
-Se utiliza **Google Style Docstrings**, siguiendo las recomendaciones generales
-de PEP 257. Los encabezados de sección son `Args:`, `Returns:`, `Raises:`,
-`Yields:`, `Attributes:`, `Examples:` y `Note:` según corresponda. Los nombres
-de argumentos coinciden con la firma de cada función y las magnitudes físicas
-incluyen sus unidades.
-
-Ruff valida esta convención mediante `pydocstyle`. La configuración está en
-`pyproject.toml`, bajo `[tool.ruff.lint.pydocstyle]`, con `convention = "google"`;
-además, el conjunto de reglas `D` está habilitado.
-
-Los comentarios se reservan para justificar decisiones físicas o computacionales
-que no se deducen de forma inmediata del código. Cada celda de código de los
-notebooks comienza con un comentario que resume su objetivo.
-
-No se añade un comentario redundante a cada línea: la meta es explicar el código,
-no duplicarlo en lenguaje natural.
+Los ejemplos que crean `BohrAtom` sin indicar ninguna estrategia siguen utilizando masa reducida. Se recomienda `calculation_strategy=` para código nuevo. El argumento anterior `mass_strategy=` continúa disponible y adapta objetos antiguos que implementaban solamente `calculate(electron_mass_kg, nucleus_mass_kg)`.

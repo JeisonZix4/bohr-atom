@@ -15,6 +15,7 @@ Con la biblioteca es posible calcular niveles energéticos, separaciones electr�
 - [Estructura del proyecto](#estructura-del-proyecto)
 - [Instalación](#instalación)
 - [Ejemplo rápido](#ejemplo-rápido)
+- [Patrón de diseño Strategy integrado en BohrAtom](#patrón-de-diseño-strategy-integrado-en-bohratom)
 - [API de la clase `BohrAtom`](#api-de-la-clase-bohratom)
 - [Ejemplos de cálculo](#ejemplos-de-cálculo)
 - [Visualización y animaciones](#visualización-y-animaciones)
@@ -157,6 +158,7 @@ Bohr-Atom/
 │       ├── interactive.py
 │       ├── orbit.py
 │       ├── transitions.py
+│       ├── strategies.py
 │       ├── validation.py
 │       └── visualization.py
 ├── tests/
@@ -176,10 +178,80 @@ Bohr-Atom/
 | `orbit.py` | Calcula radios, velocidad angular y período orbital; también realiza conversiones de unidades de longitud. |
 | `transitions.py` | Calcula la variación energética del átomo y las propiedades del fotón. |
 | `atom.py` | Implementa la clase pública `BohrAtom` y reúne las operaciones del sistema. |
+| `strategies.py` | Implementa las estrategias de cálculo que `BohrAtom` utiliza para energía, radio y velocidad angular. |
 | `visualization.py` | Genera diagramas estáticos de niveles energéticos y órbitas. |
-| `interactive.py` | Implementa widgets de Jupyter y animaciones orbitales. |
+| `interactive.py` | Implementa widgets de Jupyter y animaciones orbitales con controles de reproducción. |
 | `tests/` | Contiene pruebas automatizadas de los módulos y de las relaciones matemáticas. |
 | `notebooks/` | Contiene ejemplos reproducibles de utilización de la biblioteca. |
+
+---
+
+## Patrón de diseño Strategy integrado en `BohrAtom`
+
+La biblioteca implementa el patrón **Strategy (Estrategia)** directamente en el flujo de cálculo de la clase `BohrAtom`. No es una demostración independiente ni un módulo opcional que el usuario deba invocar después de crear el átomo: la estrategia seleccionada determina cómo se calculan la energía, el radio orbital y la velocidad angular.
+
+La interfaz pública `BohrCalculationStrategy` define las operaciones de cálculo que debe proporcionar una estrategia. La antigua interfaz `MassStrategy` y el argumento `mass_strategy` se conservan únicamente para permitir la adaptación de código de versiones anteriores. Se incluyen dos implementaciones:
+
+| Estrategia | Aproximación física | Masa efectiva |
+|---|---|---|
+| `ReducedMassStrategy` | Considera el movimiento del electrón y del núcleo en la coordenada relativa. Es la opción predeterminada. | $\mu = m_e M/(m_e+M)$ |
+| `InfiniteNucleusMassStrategy` | Considera el núcleo inmóvil, equivalente al límite de masa nuclear infinita. | $m_e$ |
+
+### ¿Cómo se aplica dentro de la clase?
+
+`BohrAtom` recibe una estrategia mediante el argumento `calculation_strategy`. Después, sus métodos públicos delegan los cálculos físicos en esa misma estrategia:
+
+| Método público de `BohrAtom` | Operación delegada a Strategy |
+|---|---|
+| `energy(n)` | `calculate_energy(...)` |
+| `radius(n)` | `calculate_radius(...)` |
+| `orbital_angular_frequency(n)` | `calculate_angular_frequency(...)` |
+| `orbital_period(n)` | Utiliza la velocidad angular calculada por la estrategia. |
+| `energy_levels(...)` | Reutiliza `energy()` y `radius()`. |
+| `transition(...)` | Obtiene las energías inicial y final mediante `energy()`. |
+| `plot_energy_levels(...)` | Utiliza las energías calculadas por la instancia. |
+| `plot_orbits(...)` y animaciones | Utilizan los radios y la cinemática de la instancia. |
+
+Por tanto, seleccionar una estrategia cambia de manera coherente todos los resultados derivados, sin introducir condicionales sobre la aproximación física en cada método de `BohrAtom`.
+
+### Ejemplo de uso
+
+```python
+from bohr_atom import (
+    BohrAtom,
+    PROTON_MASS_KG,
+    ReducedMassStrategy,
+    InfiniteNucleusMassStrategy,
+)
+
+# Ambas instancias utilizan la misma API pública de BohrAtom.
+hidrogeno_corregido = BohrAtom(
+    Z=1,
+    nucleus_mass_kg=PROTON_MASS_KG,
+    calculation_strategy=ReducedMassStrategy(),
+)
+
+hidrogeno_nucleo_fijo = BohrAtom(
+    Z=1,
+    nucleus_mass_kg=PROTON_MASS_KG,
+    calculation_strategy=InfiniteNucleusMassStrategy(),
+)
+
+# La estrategia se aplica automáticamente a energía, radio y dinámica.
+print(hidrogeno_corregido.energy(1, unit="eV"))
+print(hidrogeno_nucleo_fijo.energy(1, unit="eV"))
+print(hidrogeno_corregido.radius(1, unit="pm"))
+print(hidrogeno_nucleo_fijo.radius(1, unit="pm"))
+print(hidrogeno_corregido.transition(3, 2))
+```
+
+El atributo `calculation_strategy_name` permite consultar qué estrategia usa una instancia. `calculation_strategy` contiene el objeto estrategia; `effective_mass_kg` contiene la masa efectiva calculada por ella. El atributo histórico `reduced_mass_kg` se conserva como alias de compatibilidad, aunque bajo la aproximación de núcleo inmóvil representa la masa electrónica.
+
+### Compatibilidad con la API anterior
+
+La estrategia predeterminada conserva el comportamiento de las versiones anteriores. También se mantiene el argumento `mass_strategy` como alias de compatibilidad; para código nuevo se recomienda `calculation_strategy`. Las estrategias personalizadas antiguas que solo implementaban `calculate(electron_mass_kg, nucleus_mass_kg)` se adaptan internamente a la nueva interfaz.
+
+El ejemplo de integración del patrón se encuentra dentro del cuaderno `02_niveles_energia_y_radios.ipynb`, junto con los ejemplos de energía y radios. No se necesita un notebook independiente para que el patrón forme parte de la biblioteca.
 
 ---
 
@@ -209,7 +281,7 @@ Instala la biblioteca y las herramientas de desarrollo:
 python -m pip install -e ".[dev]"
 ```
 
-Para trabajar con notebooks y widgets interactivos, instala también las dependencias opcionales:
+Para trabajar con notebooks, controles interactivos y animaciones con un lienzo Matplotlib actualizable, instala también las dependencias opcionales. El extra incluye `ipywidgets` e `ipympl`:
 
 ```bash
 python -m pip install -e ".[dev,notebooks]"
@@ -225,7 +297,7 @@ Cuando la distribución esté publicada en PyPI, podrá instalarse con:
 python -m pip install bohr-atom-toolkit
 ```
 
-Para utilizar los widgets y los notebooks, instala además las dependencias correspondientes o instala el proyecto desde el repositorio con el extra `notebooks`.
+Para utilizar los widgets y los notebooks, instala además las dependencias correspondientes o instala el proyecto desde el repositorio con el extra `notebooks`. El visor orbital utiliza el backend interactivo de `ipympl`; en el notebook ejecuta `%matplotlib widget` antes de importar `matplotlib.pyplot` o `bohr_atom.interactive`.
 
 ---
 
@@ -269,20 +341,20 @@ print(helio_ionizado.energy(1, unit="eV"))
 
 ## API de la clase `BohrAtom`
 
-La clase `BohrAtom` representa un sistema hidrogenoide concreto. Al crear una instancia se validan los parámetros físicos, se asignan las cargas del núcleo y del electrón y se calcula la masa reducida. Los métodos de cálculo utilizan esos atributos para evitar que el usuario tenga que proporcionar las mismas constantes en cada operación.
+La clase `BohrAtom` representa un sistema hidrogenoide concreto. Al crear una instancia se validan los parámetros físicos, se asignan las cargas del núcleo y del electrón y se selecciona una estrategia de cálculo. Por defecto se utiliza `ReducedMassStrategy`. El atributo `effective_mass_kg` contiene la masa efectiva que utiliza la instancia; `calculation_strategy_name` permite consultar la estrategia activa. Los métodos físicos delegan en esa estrategia y, por ello, todas las operaciones derivadas usan la misma aproximación.
 
 ### Constructor y representación
 
 | Método | ¿Qué hace? | Parámetros | Resultado |
 |---|---|---|---|
-| `__init__(Z, nucleus_mass_kg, name, electron_mass_kg)` | Inicializa el sistema, valida los parámetros, asigna las cargas eléctricas y calcula la masa reducida. | `Z`: número atómico entero positivo; `nucleus_mass_kg`: masa nuclear en kg; `name`: nombre descriptivo; `electron_mass_kg`: masa electrónica en kg. | Una instancia de `BohrAtom`. |
-| `__repr__()` | Devuelve una representación textual breve del objeto, útil para inspección y depuración. | No recibe argumentos adicionales del usuario. | Cadena con el nombre, el número atómico y la masa reducida. |
+| `__init__(Z, nucleus_mass_kg, name, electron_mass_kg, calculation_strategy)` | Inicializa el sistema, valida los parámetros, asigna las cargas y configura la estrategia que ejecutará los cálculos físicos. | `Z`: número atómico; `nucleus_mass_kg`: masa nuclear en kg; `name`: nombre; `electron_mass_kg`: masa electrónica en kg; `calculation_strategy`: objeto que implementa `BohrCalculationStrategy`. | Una instancia de `BohrAtom`. Por defecto utiliza `ReducedMassStrategy`. El argumento anterior `mass_strategy` se conserva como alias de compatibilidad. |
+| `__repr__()` | Devuelve una representación textual breve del objeto, útil para inspección y depuración. | No recibe argumentos adicionales del usuario. | Cadena con el nombre, número atómico, masa efectiva y estrategia seleccionada. |
 
 ### Métodos de cálculo físico
 
 | Método | ¿Qué hace? | Parámetros | Resultado y unidades |
 |---|---|---|---|
-| `energy(n, unit="eV")` | Calcula la energía del estado estacionario con número cuántico principal `n`, utilizando la masa reducida de la instancia. | `n`: entero positivo; `unit`: `"J"` o `"eV"`. | Energía del nivel en julios o electronvoltios. Es negativa para estados ligados. |
+| `energy(n, unit="eV")` | Calcula la energía del estado estacionario con número cuántico principal `n`, utilizando la masa efectiva seleccionada por la estrategia de la instancia. | `n`: entero positivo; `unit`: `"J"` o `"eV"`. | Energía del nivel en julios o electronvoltios. Es negativa para estados ligados. |
 | `radius(n, unit="m")` | Calcula la separación relativa electrón-núcleo correspondiente al nivel `n`. | `n`: entero positivo; `unit`: `"m"`, `"nm"`, `"pm"` o `"angstrom"`. | Separación relativa en la unidad solicitada. No es la distancia del electrón al centro de masa. |
 | `orbital_angular_frequency(n)` | Calcula la velocidad angular de la coordenada relativa para la órbita circular de Bohr. | `n`: entero positivo. | Velocidad angular en rad/s. No es la frecuencia del fotón de una transición. |
 | `orbital_period(n)` | Calcula el tiempo necesario para completar una revolución, a partir de la velocidad angular orbital. | `n`: entero positivo. | Período orbital en segundos. |
@@ -301,10 +373,10 @@ La clase `BohrAtom` representa un sistema hidrogenoide concreto. Al crear una in
 | Método | ¿Qué hace? | Parámetros | Resultado |
 |---|---|---|---|
 | `animate_orbit(n, **kwargs)` | Construye una animación de la posición del electrón sobre la circunferencia correspondiente al nivel `n`. Puede mostrar la trayectoria recorrida y un vector tangente. | `n`: nivel; argumentos opcionales: `frames` (fotogramas, por defecto 180), `interval` (intervalo visual en ms, por defecto 30), `revolutions` (vueltas por ciclo), `show_trail` (mostrar trayectoria) y `figsize` (tamaño de figura). | Objeto `matplotlib.animation.FuncAnimation`. En Jupyter puede mostrarse con `HTML(animacion.to_jshtml())`. |
-| `interactive_energy_diagram(max_n=8)` | Crea controles para seleccionar el número máximo de niveles y los estados inicial y final. Actualiza el diagrama y presenta la clasificación del proceso y las propiedades del fotón. | `max_n`: número cuántico máximo disponible en los controles; debe ser al menos 2. | Panel `ipywidgets.VBox` compatible con JupyterLab. |
-| `interactive_orbit_viewer(n_max=6, **kwargs)` | Crea un visor con selector del nivel `n`, control de fase, reproducción y opción para mostrar u ocultar la trayectoria. | `n_max`: nivel máximo del selector; `frames`: cantidad de posiciones angulares (por defecto 180); `interval`: intervalo visual entre posiciones en ms (por defecto 35). | Panel `ipywidgets.VBox` compatible con JupyterLab. |
+| `interactive_energy_diagram(max_n=8)` | Crea controles para seleccionar el máximo de niveles, los estados inicial y final y mostrar/ocultar las demás transiciones descendentes. Actualiza el diagrama sobre un único lienzo. | `max_n`: número cuántico máximo disponible; debe ser al menos 2. | Panel `ipywidgets.VBox` con lienzo `ipympl`. Requiere `%matplotlib widget`. |
+| `interactive_orbit_viewer(n_max=6, **kwargs)` | Crea un visor orbital con selector de `n`, reproducción/pausa, fase angular, velocidad visual y controles para mostrar la trayectoria y el vector tangente. Actualiza un único lienzo interactivo, sin reconstruir la figura en cada fotograma. | `n_max`: nivel máximo; `frames`: posiciones angulares (por defecto 180); `interval`: intervalo base en ms (por defecto 35). | Panel `ipywidgets.VBox` con lienzo `ipympl`. Requiere `%matplotlib widget`. |
 
-Los tres últimos métodos requieren las dependencias opcionales de Jupyter. Instálalas con:
+Los métodos de widgets y el lienzo interactivo requieren las dependencias opcionales de Jupyter. Instálalas con:
 
 ```bash
 python -m pip install -e ".[notebooks]"
@@ -405,7 +477,7 @@ Los cuadernos de `notebooks/` muestran cómo utilizar la API pública de la bibl
 | `02_niveles_energia_y_radios.ipynb` | Niveles energéticos, relaciones de escala y radios orbitales. |
 | `03_transiciones_y_espectros.ipynb` | Emisión, absorción, energía, frecuencia y longitud de onda. |
 | `04_visualizacion_de_niveles_y_orbitas.ipynb` | Diagramas energéticos y representación de órbitas circulares. |
-| `05_visualizaciones_interactivas_y_animaciones.ipynb` | Widgets, controles de fase y animaciones orbitales. |
+| `05_visualizaciones_interactivas_y_animaciones.ipynb` | Widgets, controles de fase, velocidad visual y animaciones orbitales. |
 
 Para abrirlos desde la raíz del repositorio:
 

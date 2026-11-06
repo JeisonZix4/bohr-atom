@@ -12,12 +12,12 @@ from .constants import (
     SPEED_OF_LIGHT_M_S,
     VACUUM_PERMITTIVITY_F_M,
 )
-from .energy import energy_level_joule, reduced_mass
-from .orbit import (
-    convert_radius,
-    orbital_angular_frequency_rad_s,
-    orbital_period_s,
-    orbital_radius_m,
+from .orbit import convert_radius, orbital_period_s
+from .strategies import (
+    BohrCalculationStrategy,
+    MassStrategy,
+    ReducedMassStrategy,
+    _LegacyMassStrategyAdapter,
 )
 from .transitions import transition_properties
 from .validation import validate_positive_integer, validate_positive_real
@@ -33,11 +33,18 @@ class BohrAtom:
         name: Etiqueta descriptiva utilizada en las representaciones gráficas.
         electron_mass_kg: Masa del electrón en kilogramos. Por defecto usa
             el valor recomendado por CODATA.
+        calculation_strategy: Estrategia que realiza los cálculos de energía,
+            radio y velocidad angular. Por defecto utiliza masa reducida.
+        mass_strategy: Alias de compatibilidad con versiones anteriores; se
+            recomienda utilizar ``calculation_strategy`` en código nuevo.
 
     Note:
-        Las fórmulas utilizan la masa reducida y describen la coordenada relativa
-        electrón-núcleo. El modelo es no relativista y no incluye estructura fina,
-        hiperfina ni efectos de tamaño nuclear.
+        Las fórmulas utilizan la masa efectiva seleccionada y describen la
+        coordenada relativa electrón-núcleo. Por defecto la estrategia calcula
+        la masa reducida; la estrategia de núcleo inmóvil utiliza la masa del
+        electrón. La estrategia seleccionada interviene directamente en energía,
+        radio y velocidad angular. El modelo es no relativista y no incluye
+        estructura fina, hiperfina ni efectos de tamaño nuclear.
     """
 
     def __init__(
@@ -46,20 +53,27 @@ class BohrAtom:
         nucleus_mass_kg: float,
         name: str = "Sistema hidrogenoide",
         electron_mass_kg: float = ELECTRON_MASS_KG,
+        calculation_strategy: BohrCalculationStrategy | None = None,
+        mass_strategy: MassStrategy | None = None,
     ) -> None:
-        """Inicializa el átomo hidrogenoide y calcula su masa reducida.
+        """Inicializa el sistema hidrogenoide y configura su estrategia de cálculo.
 
         Args:
             Z: Número atómico del núcleo. Debe ser un entero positivo.
             nucleus_mass_kg: Masa del núcleo en kilogramos.
             name: Nombre descriptivo utilizado en las salidas y los gráficos.
             electron_mass_kg: Masa del electrón en kilogramos. Por defecto usa
-            el valor recomendado por CODATA.
+                el valor recomendado por CODATA.
+            calculation_strategy: Estrategia completa para los cálculos físicos.
+                Por defecto se utiliza ``ReducedMassStrategy``.
+            mass_strategy: Nombre anterior del argumento, conservado para
+                compatibilidad. No debe combinarse con calculation_strategy.
 
         Raises:
-            TypeError: Si Z no es entero o alguna masa no es un número real.
-            ValueError: Si Z o alguna masa no es estrictamente positiva, o si
-                name está vacío.
+            TypeError: Si Z o las masas tienen tipos inválidos, o si la estrategia
+                no implementa los métodos de cálculo requeridos.
+            ValueError: Si Z o alguna masa no es positiva, si name está vacío,
+                o si se proporcionan ambos argumentos de estrategia.
         """
         self.Z = validate_positive_integer(Z, "Z")
         self.nucleus_mass_kg = validate_positive_real(
@@ -83,16 +97,79 @@ class BohrAtom:
         self.hbar = REDUCED_PLANCK_CONSTANT_J_S
         self.speed_of_light = SPEED_OF_LIGHT_M_S
 
-        self.reduced_mass_kg = reduced_mass(
-            self.electron_mass_kg,
-            self.nucleus_mass_kg,
+        # Strategy forma parte del flujo normal de cálculo de BohrAtom.
+        # La misma estrategia se utiliza para energía, radio y velocidad angular.
+        if calculation_strategy is not None and mass_strategy is not None:
+            raise ValueError(
+                "Utiliza calculation_strategy o mass_strategy, pero no ambos."
+            )
+
+        selected_strategy = calculation_strategy
+        if selected_strategy is None and mass_strategy is not None:
+            required_methods = (
+                "effective_mass",
+                "calculate_energy",
+                "calculate_radius",
+                "calculate_angular_frequency",
+            )
+            if all(
+                callable(getattr(mass_strategy, method, None))
+                for method in required_methods
+            ):
+                selected_strategy = mass_strategy
+            else:
+                # Adapta estrategias anteriores que solo definían calculate().
+                selected_strategy = _LegacyMassStrategyAdapter(mass_strategy)
+
+        if selected_strategy is None:
+            selected_strategy = ReducedMassStrategy()
+
+        required_methods = (
+            "effective_mass",
+            "calculate_energy",
+            "calculate_radius",
+            "calculate_angular_frequency",
         )
+        missing_methods = [
+            method
+            for method in required_methods
+            if not callable(getattr(selected_strategy, method, None))
+        ]
+        if missing_methods:
+            raise TypeError(
+                "calculation_strategy no implementa la interfaz requerida. "
+                f"Faltan los métodos: {', '.join(missing_methods)}."
+            )
+
+        self.calculation_strategy = selected_strategy
+        # Alias del nombre anterior para conservar compatibilidad de acceso.
+        self.mass_strategy = selected_strategy
+
+        self.effective_mass_kg = validate_positive_real(
+            self.calculation_strategy.effective_mass(
+                self.electron_mass_kg,
+                self.nucleus_mass_kg,
+            ),
+            "masa efectiva calculada por calculation_strategy",
+        )
+        # Alias histórico: con la estrategia de núcleo inmóvil representa m_e.
+        self.reduced_mass_kg = self.effective_mass_kg
+
+    @property
+    def calculation_strategy_name(self) -> str:
+        """Devuelve el nombre de la estrategia usada por el objeto.
+
+        Returns:
+            str: Nombre de la clase de estrategia seleccionada.
+        """
+        return type(self.calculation_strategy).__name__
 
     def __repr__(self) -> str:
         """Devuelve una representación breve y útil para depuración."""
         return (
             f"BohrAtom(name={self.name!r}, Z={self.Z}, "
-            f"reduced_mass={self.reduced_mass_kg:.6e} kg)"
+            f"effective_mass={self.effective_mass_kg:.6e} kg, "
+            f"strategy={type(self.calculation_strategy).__name__})"
         )
 
     def energy(self, n: int, unit: str = "eV") -> float:
@@ -105,10 +182,11 @@ class BohrAtom:
         Returns:
             float: Energía del estado ligado en la unidad solicitada.
         """
-        energy_joule = energy_level_joule(
+        energy_joule = self.calculation_strategy.calculate_energy(
             n=n,
             Z=self.Z,
-            mu=self.reduced_mass_kg,
+            electron_mass_kg=self.electron_mass_kg,
+            nucleus_mass_kg=self.nucleus_mass_kg,
             elementary_charge_c=self.electron_charge_c,
             epsilon_0=self.epsilon_0,
             hbar=self.hbar,
@@ -132,10 +210,11 @@ class BohrAtom:
         Returns:
             float: Radio o separación relativa en la unidad solicitada.
         """
-        radius_m = orbital_radius_m(
+        radius_m = self.calculation_strategy.calculate_radius(
             n=n,
             Z=self.Z,
-            mu=self.reduced_mass_kg,
+            electron_mass_kg=self.electron_mass_kg,
+            nucleus_mass_kg=self.nucleus_mass_kg,
             elementary_charge_c=self.electron_charge_c,
             epsilon_0=self.epsilon_0,
             hbar=self.hbar,
@@ -158,10 +237,11 @@ class BohrAtom:
             TypeError: Si n no es un entero.
             ValueError: Si n no es positivo.
         """
-        return orbital_angular_frequency_rad_s(
+        return self.calculation_strategy.calculate_angular_frequency(
             n=n,
             Z=self.Z,
-            mu=self.reduced_mass_kg,
+            electron_mass_kg=self.electron_mass_kg,
+            nucleus_mass_kg=self.nucleus_mass_kg,
             elementary_charge_c=self.electron_charge_c,
             epsilon_0=self.epsilon_0,
             hbar=self.hbar,

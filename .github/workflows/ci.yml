@@ -1,0 +1,50 @@
+# Ejecuta validaciones de formato y pruebas cada vez que se modifica main
+# o se abre una solicitud de integración hacia esa rama.
+name: Validación del proyecto Bohr-Atom
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  pruebas:
+    name: Pruebas en Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
+
+    steps:
+      # Descarga el estado del repositorio asociado al commit o Pull Request.
+      - name: Obtener el código fuente
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      # Configura la versión de Python correspondiente a cada matriz.
+      - name: Configurar Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      # Instala las herramientas de calidad y el paquete en modo editable.
+      - name: Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+
+      # Comprueba errores comunes, importaciones y convenciones de estilo.
+      - name: Revisar calidad del código
+        run: ruff check .
+
+      # Ejecuta las pruebas matemáticas, físicas y de visualización.
+      - name: Ejecutar pruebas
+        run: |
+          pytest --cov=bohr_atom --cov-report=term-missing

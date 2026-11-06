@@ -1,54 +1,19 @@
-
 [build-system]
 requires = ["setuptools>=77.0.3", "wheel"]
 build-backend = "setuptools.build_meta"
 
-
 [project]
-
-# Debe coincidir exactamente con el nombre del Pending Publisher de PyPI.
 name = "bohr-atom-toolkit"
-
 version = "0.1.0"
-
-description = "Implementacion computacional del modelo de Bohr para atomos hidrogenoides"
-
-readme = { file = "README.md", content-type = "text/markdown" }
-
+description = "Implementación computacional del modelo de Bohr para átomos hidrogenoides"
+readme = "README.md"
 requires-python = ">=3.11"
-
-keywords = [
-    "bohr",
-    "atomic-physics",
-    "hydrogen",
-    "hydrogen-like-atoms",
-    "physics",
-    "scientific-computing",
-]
-
-classifiers = [
-    "Development Status :: 3 - Alpha",
-    "Intended Audience :: Education",
-    "Intended Audience :: Science/Research",
-    "Topic :: Scientific/Engineering :: Physics",
-    "Topic :: Scientific/Engineering :: Visualization",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
-    "Programming Language :: Python :: 3.14",
-    "Operating System :: OS Independent",
-]
-
 dependencies = [
     "matplotlib>=3.8",
     "numpy>=1.26",
 ]
 
-
 [project.optional-dependencies]
-
-# Herramientas de desarrollo, pruebas y construcción.
 dev = [
     "pytest>=8.0",
     "pytest-cov>=5.0",
@@ -56,96 +21,32 @@ dev = [
     "build>=1.2",
     "twine>=5.0",
 ]
-
-# Entorno de notebooks y visualizaciones interactivas.
 notebooks = [
     "jupyterlab>=4.0",
-    "ipykernel>=6.29",
-    "ipython>=8.20",
     "ipywidgets>=8.1",
-    "ipympl>=0.10",
+    "ipympl>=0.9",
+    "ipython>=8.0",
     "pandas>=2.2",
 ]
 
-
 [project.urls]
-
-Homepage = "https://github.com/JeisonZix4/bohr-atom"
-
-Repository = "https://github.com/JeisonZix4/bohr-atom"
-
-Issues = "https://github.com/JeisonZix4/bohr-atom/issues"
-
-
-# ==================================================
-# CONFIGURACION DE SETUPTOOLS
-# ==================================================
-
-[tool.setuptools]
-
-include-package-data = true
-
+Homepage = "https://github.com/TU_USUARIO/Bohr-Atom"
+Repository = "https://github.com/TU_USUARIO/Bohr-Atom"
+Issues = "https://github.com/TU_USUARIO/Bohr-Atom/issues"
 
 [tool.setuptools.packages.find]
-
 where = ["src"]
 
-include = ["bohr_atom*"]
-
-exclude = ["bohr_atom.tests*"]
-
-
-# ==================================================
-# CONFIGURACION DE PYTEST
-# ==================================================
-
 [tool.pytest.ini_options]
-
 testpaths = ["tests"]
-
 addopts = "-ra"
 
-pythonpath = ["src"]
-
-
-# ==================================================
-# CONFIGURACION DE COBERTURA
-# ==================================================
-
-[tool.coverage.run]
-
-branch = true
-
-source = ["bohr_atom"]
-
-
-[tool.coverage.report]
-
-show_missing = true
-
-skip_covered = true
-
-
-# ==================================================
-# CONFIGURACION DE RUFF
-# ==================================================
-
 [tool.ruff]
-
 line-length = 88
-
 target-version = "py311"
 
-src = ["src"]
-
-extend-exclude = [".venv", "build", "dist"]
-
-
 [tool.ruff.lint]
-
 select = ["E", "F", "I", "B", "UP", "D"]
 
-
 [tool.ruff.lint.pydocstyle]
-
 convention = "google"

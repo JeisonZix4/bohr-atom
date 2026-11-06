@@ -50,8 +50,16 @@ y cinco notebooks de ejemplo. Está pensada para integrarse en el repositorio
 
 ## Convención de documentación
 
-Los módulos, clases y funciones incluyen docstrings en español. Los docstrings
-explican el propósito, parámetros, unidades, retornos y errores relevantes.
+Se utiliza **Google Style Docstrings**, siguiendo las recomendaciones generales
+de PEP 257. Los encabezados de sección son `Args:`, `Returns:`, `Raises:`,
+`Yields:`, `Attributes:`, `Examples:` y `Note:` según corresponda. Los nombres
+de argumentos coinciden con la firma de cada función y las magnitudes físicas
+incluyen sus unidades.
+
+Ruff valida esta convención mediante `pydocstyle`. La configuración está en
+`pyproject.toml`, bajo `[tool.ruff.lint.pydocstyle]`, con `convention = "google"`;
+además, el conjunto de reglas `D` está habilitado.
+
 Los comentarios se reservan para justificar decisiones físicas o computacionales
 que no se deducen de forma inmediata del código. Cada celda de código de los
 notebooks comienza con un comentario que resume su objetivo.

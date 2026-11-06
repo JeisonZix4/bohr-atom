@@ -18,7 +18,18 @@ from matplotlib.patches import Circle
 
 
 def _validate_frames(frames: int) -> int:
-    """Comprueba que el número de fotogramas sea un entero de al menos dos."""
+    """Valida la cantidad de fotogramas de una animación.
+
+    Args:
+        frames: Cantidad de fotogramas. Debe ser un entero mayor o igual que dos.
+
+    Returns:
+        int: Cantidad de fotogramas validada.
+
+    Raises:
+        TypeError: Si frames no es un entero o es un booleano.
+        ValueError: Si frames es menor que dos.
+    """
     if isinstance(frames, bool) or not isinstance(frames, Integral):
         raise TypeError("frames debe ser un número entero.")
     if frames < 2:
@@ -27,7 +38,18 @@ def _validate_frames(frames: int) -> int:
 
 
 def _validate_interval(interval: float) -> float:
-    """Valida el intervalo visual entre fotogramas, expresado en ms."""
+    """Valida el intervalo visual entre fotogramas.
+
+    Args:
+        interval: Tiempo entre fotogramas en milisegundos. Debe ser finito y positivo.
+
+    Returns:
+        float: Intervalo visual convertido a float, en milisegundos.
+
+    Raises:
+        TypeError: Si interval no es un número real o es un booleano.
+        ValueError: Si interval no es finito o no es positivo.
+    """
     if isinstance(interval, bool) or not isinstance(interval, Real):
         raise TypeError("interval debe ser un número real.")
     value = float(interval)
@@ -47,34 +69,23 @@ def animate_orbit(
 ) -> FuncAnimation:
     """Construye una animación de la coordenada relativa de la órbita.
 
-    Parameters
-    ----------
-    atom:
-        Instancia de :class:`bohr_atom.BohrAtom`.
-    n:
-        Número cuántico principal de la órbita que se representará.
-    frames:
-        Número de fotogramas de la animación.
-    interval:
-        Tiempo de espera visual entre fotogramas, en milisegundos.
-    revolutions:
-        Número de vueltas representadas en un ciclo de animación.
-    show_trail:
-        Si es ``True``, muestra el tramo de trayectoria ya recorrido.
-    figsize:
-        Tamaño de la figura de Matplotlib.
+    Args:
+        atom: Instancia de :class:`bohr_atom.BohrAtom`.
+        n: Número cuántico principal de la órbita que se representará.
+        frames: Número de fotogramas de la animación.
+        interval: Tiempo de espera visual entre fotogramas, en milisegundos.
+        revolutions: Número de vueltas representadas en un ciclo de animación.
+        show_trail: Si es ``True``, muestra el tramo de trayectoria ya recorrido.
+        figsize: Tamaño de la figura de Matplotlib.
 
-    Returns
-    -------
-    matplotlib.animation.FuncAnimation
-        Objeto de animación. En Jupyter puede mostrarse mediante
-        ``IPython.display.HTML(animation.to_jshtml())``.
+    Returns:
+        matplotlib.animation.FuncAnimation: Objeto de animación. En Jupyter puede
+            mostrarse mediante ``IPython.display.HTML(animation.to_jshtml())``.
 
-    Notes
-    -----
-    El intervalo visual no es el período físico. El período calculado se
-    muestra como dato numérico porque los tiempos orbitales son demasiado
-    pequeños para reproducirse directamente en una pantalla.
+    Note:
+        El intervalo visual no es el período físico. El período calculado se
+        muestra como dato numérico porque los tiempos orbitales son demasiado
+        pequeños para reproducirse directamente en una pantalla.
     """
     from .validation import validate_positive_integer, validate_positive_real
 
@@ -124,7 +135,11 @@ def animate_orbit(
     )
 
     def initialize_animation():
-        """Deja vacíos los artistas antes de dibujar el primer fotograma."""
+        """Inicializa los artistas gráficos antes del primer fotograma.
+
+        Returns:
+            tuple: Artistas de Matplotlib que se actualizarán durante la animación.
+        """
         electron.set_data([], [])
         trail_line.set_data([], [])
         tangent.xy = (0.0, 0.0)
@@ -132,7 +147,15 @@ def animate_orbit(
         return electron, trail_line, tangent
 
     def update_animation(frame: int):
-        """Actualiza la posición, la trayectoria y la tangente del electrón."""
+        """Actualiza la posición, la trayectoria y la tangente del electrón.
+
+        Args:
+            frame: Índice del fotograma actual, dentro del intervalo definido para
+                la animación.
+
+        Returns:
+            tuple: Artistas de Matplotlib modificados en el fotograma actual.
+        """
         theta = 2.0 * pi * revolutions * frame / (frames - 1)
         x_position = radius_pm * np.cos(theta)
         y_position = radius_pm * np.sin(theta)
@@ -168,26 +191,20 @@ def animate_orbit(
 def interactive_energy_diagram(atom, max_n: int = 8):
     """Crea un panel ipywidgets para explorar una transición electrónica.
 
-    El usuario puede seleccionar el número máximo de niveles mostrados,
-    así como los estados inicial y final. La salida incluye el diagrama y
-    los valores del fotón asociado a la transición.
+    El usuario puede seleccionar el número máximo de niveles y los estados
+    inicial y final. El panel muestra el diagrama y las propiedades del fotón.
 
-    Parameters
-    ----------
-    atom:
-        Instancia de :class:`bohr_atom.BohrAtom`.
-    max_n:
-        Límite superior permitido para los deslizadores de nivel.
+    Args:
+        atom: Instancia de bohr_atom.BohrAtom que proporciona las energías.
+        max_n: Límite superior permitido para los selectores de nivel.
 
-    Returns
-    -------
-    ipywidgets.VBox
-        Panel interactivo que puede mostrarse en JupyterLab.
+    Returns:
+        ipywidgets.VBox: Panel interactivo compatible con JupyterLab.
 
-    Raises
-    ------
-    ImportError
-        Si no están instaladas las dependencias opcionales de notebooks.
+    Raises:
+        ImportError: Si no están instaladas las dependencias opcionales de notebooks.
+        TypeError: Si max_n no es un entero.
+        ValueError: Si max_n es menor que dos.
     """
     try:
         import ipywidgets as widgets
@@ -240,7 +257,17 @@ def interactive_energy_diagram(atom, max_n: int = 8):
 
 
 def _render_energy_diagram(atom, n_max, n_initial, n_final):
-    """Dibuja la transición seleccionada y muestra sus datos fotónicos."""
+    """Dibuja la transición seleccionada y presenta sus datos fotónicos.
+
+    Args:
+        atom: Instancia de BohrAtom utilizada para calcular energías y fotones.
+        n_max: Número cuántico máximo que se representa en el diagrama.
+        n_initial: Nivel cuántico inicial de la transición.
+        n_final: Nivel cuántico final de la transición.
+
+    Returns:
+        None: Muestra el gráfico y la información mediante la salida de IPython.
+    """
     from IPython.display import display
 
     if n_initial == n_final:
@@ -308,21 +335,19 @@ def interactive_orbit_viewer(
 ):
     """Crea un visor orbital con selector de nivel, fase y reproducción.
 
-    Parameters
-    ----------
-    atom:
-        Instancia de :class:`bohr_atom.BohrAtom`.
-    n_max:
-        Mayor nivel disponible en el selector.
-    frames:
-        Cantidad de posiciones angulares disponibles.
-    interval:
-        Intervalo visual entre posiciones, en milisegundos.
+    Args:
+        atom: Instancia de BohrAtom que define el sistema hidrogenoide.
+        n_max: Mayor número cuántico principal disponible en el selector.
+        frames: Cantidad de posiciones angulares de la animación.
+        interval: Intervalo visual entre posiciones, en milisegundos.
 
-    Returns
-    -------
-    ipywidgets.VBox
-        Panel interactivo compatible con JupyterLab.
+    Returns:
+        ipywidgets.VBox: Panel interactivo compatible con JupyterLab.
+
+    Raises:
+        ImportError: Si no están instaladas ipywidgets e IPython.
+        TypeError: Si los parámetros tienen tipos inválidos.
+        ValueError: Si los valores están fuera de sus dominios permitidos.
     """
     try:
         import ipywidgets as widgets
@@ -381,7 +406,18 @@ def interactive_orbit_viewer(
 
 
 def _render_orbit_frame(atom, n, frame, frames, show_trail):
-    """Actualiza la vista orbital para el nivel y ángulo seleccionados."""
+    """Actualiza la posición del electrón para el nivel y ángulo seleccionados.
+
+    Args:
+        atom: Instancia de BohrAtom que proporciona el radio orbital.
+        n: Número cuántico principal de la órbita representada.
+        frame: Índice de la posición angular actual.
+        frames: Número total de posiciones disponibles.
+        show_trail: Indica si se dibuja la trayectoria recorrida.
+
+    Returns:
+        None: Actualiza la salida gráfica de Jupyter.
+    """
     from IPython.display import display
 
     radius_pm = atom.radius(n, unit="pm")

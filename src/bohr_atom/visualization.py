@@ -10,24 +10,17 @@ from .validation import validate_positive_integer
 def plot_energy_levels(atom, n_max: int = 5, transitions=None, ax=None):
     """Dibuja niveles energéticos y flechas de transición descendentes.
 
-    Parameters
-    ----------
-    atom:
-        Instancia de :class:`bohr_atom.BohrAtom`.
-    n_max:
-        Último nivel principal que se dibujará.
-    transitions:
-        Iterable opcional de pares ``(n_inicial, n_final)``. Si se omite,
-        se representan todas las transiciones descendentes entre los
-        niveles mostrados.
-    ax:
-        Ejes de Matplotlib existentes. Si es ``None``, se crean una figura
-        y unos ejes nuevos.
+    Args:
+        atom: Instancia de :class:`bohr_atom.BohrAtom`.
+        n_max: Último nivel principal que se dibujará.
+        transitions: Iterable opcional de pares ``(n_inicial, n_final)``. Si se
+            omite, se representan todas las transiciones descendentes entre
+            los niveles mostrados.
+        ax: Ejes de Matplotlib existentes. Si es ``None``, se crea una figura
+            con sus ejes.
 
-    Returns
-    -------
-    tuple
-        Objetos ``(fig, ax)`` de Matplotlib.
+    Returns:
+        tuple: Objetos ``(fig, ax)`` de Matplotlib.
     """
     import matplotlib.pyplot as plt
 
@@ -108,19 +101,13 @@ def plot_orbits(atom, levels, ax=None):
     expresadas en picómetros. La figura es una representación del modelo
     de Bohr y no una representación de orbitales cuánticos.
 
-    Parameters
-    ----------
-    atom:
-        Instancia de :class:`bohr_atom.BohrAtom`.
-    levels:
-        Iterable de números cuánticos que se desean representar.
-    ax:
-        Ejes de Matplotlib existentes o ``None`` para crear una figura.
+    Args:
+        atom: Instancia de :class:`bohr_atom.BohrAtom`.
+        levels: Iterable de números cuánticos que se desean representar.
+        ax: Ejes de Matplotlib existentes o ``None`` para crear una figura.
 
-    Returns
-    -------
-    tuple
-        Objetos ``(fig, ax)`` de Matplotlib.
+    Returns:
+        tuple: Objetos ``(fig, ax)`` de Matplotlib.
     """
     import matplotlib.pyplot as plt
     from matplotlib.patches import Circle

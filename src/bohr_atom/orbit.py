@@ -35,25 +35,16 @@ def orbital_radius_m(
     La expresión se obtiene al combinar la fuerza de Coulomb con la
     cuantización del momento angular ``mu * v * r = n * hbar``.
 
-    Parameters
-    ----------
-    n:
-        Número cuántico principal, entero positivo.
-    Z:
-        Número atómico, entero positivo.
-    mu:
-        Masa reducida del sistema en kilogramos.
-    elementary_charge_c:
-        Magnitud de la carga elemental en culombios.
-    epsilon_0:
-        Permitividad eléctrica del vacío en faradios por metro.
-    hbar:
-        Constante de Planck reducida en julios-segundo.
+    Args:
+        n: Número cuántico principal, entero positivo.
+        Z: Número atómico, entero positivo.
+        mu: Masa reducida del sistema en kilogramos.
+        elementary_charge_c: Magnitud de la carga elemental en culombios.
+        epsilon_0: Permitividad eléctrica del vacío en faradios por metro.
+        hbar: Constante de Planck reducida en julios-segundo.
 
-    Returns
-    -------
-    float
-        Distancia relativa electrón-núcleo en metros.
+    Returns:
+        float: Distancia relativa electrón-núcleo en metros.
     """
     n = validate_positive_integer(n, "n")
     Z = validate_positive_integer(Z, "Z")
@@ -70,24 +61,16 @@ def orbital_radius_m(
 def convert_radius(radius_m: float, unit: str = "m") -> float:
     """Convierte un radio en metros a una unidad admitida.
 
-    Parameters
-    ----------
-    radius_m:
-        Radio positivo expresado en metros.
-    unit:
-        Unidad de salida: ``'m'``, ``'nm'``, ``'pm'`` o ``'angstrom'``.
+    Args:
+        radius_m: Radio positivo expresado en metros.
+        unit: Unidad de salida: ``'m'``, ``'nm'``, ``'pm'`` o ``'angstrom'``.
 
-    Returns
-    -------
-    float
-        Radio convertido a la unidad solicitada.
+    Returns:
+        float: Radio convertido a la unidad solicitada.
 
-    Raises
-    ------
-    TypeError
-        Si ``unit`` no es una cadena.
-    ValueError
-        Si la unidad no está admitida.
+    Raises:
+        TypeError: Si ``unit`` no es una cadena.
+        ValueError: Si la unidad no está admitida.
     """
     if not isinstance(unit, str):
         raise TypeError("unit debe ser una cadena de texto.")
@@ -113,25 +96,16 @@ def orbital_angular_frequency_rad_s(
     con la cuantización del momento angular. No es la frecuencia del fotón
     emitido o absorbido en una transición entre niveles.
 
-    Parameters
-    ----------
-    n:
-        Número cuántico principal.
-    Z:
-        Número atómico.
-    mu:
-        Masa reducida en kilogramos.
-    elementary_charge_c:
-        Magnitud de la carga elemental en culombios.
-    epsilon_0:
-        Permitividad del vacío en faradios por metro.
-    hbar:
-        Constante de Planck reducida en julios-segundo.
+    Args:
+        n: Número cuántico principal.
+        Z: Número atómico.
+        mu: Masa reducida en kilogramos.
+        elementary_charge_c: Magnitud de la carga elemental en culombios.
+        epsilon_0: Permitividad del vacío en faradios por metro.
+        hbar: Constante de Planck reducida en julios-segundo.
 
-    Returns
-    -------
-    float
-        Velocidad angular relativa en rad/s.
+    Returns:
+        float: Velocidad angular relativa en rad/s.
     """
     n = validate_positive_integer(n, "n")
     Z = validate_positive_integer(Z, "Z")
@@ -148,15 +122,11 @@ def orbital_angular_frequency_rad_s(
 def orbital_period_s(angular_frequency_rad_s: float) -> float:
     """Calcula el período orbital a partir de una velocidad angular.
 
-    Parameters
-    ----------
-    angular_frequency_rad_s:
-        Velocidad angular positiva en radianes por segundo.
+    Args:
+        angular_frequency_rad_s: Velocidad angular positiva en radianes por segundo.
 
-    Returns
-    -------
-    float
-        Período orbital en segundos, ``2 pi / omega``.
+    Returns:
+        float: Período orbital en segundos, ``2 pi / omega``.
     """
     omega = validate_positive_real(angular_frequency_rad_s, "angular_frequency_rad_s")
     return 2.0 * pi / omega

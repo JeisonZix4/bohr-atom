@@ -1,39 +1,75 @@
-# Convenciones de documentación del código
+# Estándar de documentación del código
 
-El proyecto utiliza docstrings y comentarios en español para que la implementación
-sea comprensible tanto desde el editor como desde herramientas de documentación.
+El proyecto utiliza **Google Style Docstrings**, siguiendo las convenciones
+generales de PEP 257. Los docstrings y comentarios se redactan en español.
 
-## Docstrings
+## Reglas generales
 
-- Cada módulo comienza con un docstring que explica su responsabilidad.
-- Cada clase pública documenta qué representa y cuáles son sus supuestos físicos.
-- Cada función y método documenta su propósito.
-- Las funciones con parámetros relevantes describen `Parameters`, `Returns` y
-  `Raises` cuando corresponda.
-- Las magnitudes físicas indican sus unidades en SI o en la unidad solicitada.
-- Las funciones que implementan ecuaciones incluyen una explicación de la relación
-  matemática utilizada y de las convenciones de signos.
+- Cada módulo, clase, función y método público tiene un docstring.
+- La primera línea resume el propósito mediante una frase breve.
+- Se deja una línea en blanco entre el resumen y la descripción ampliada.
+- Los docstrings se delimitan con comillas triples dobles (`"""`).
+- Las secciones siguen los encabezados `Args:`, `Returns:`, `Yields:`,
+  `Raises:`, `Attributes:`, `Example:` y `Note:` cuando corresponda.
+- Los nombres de argumentos coinciden exactamente con la firma de la función.
+- Las magnitudes físicas incluyen unidades explícitas, preferentemente SI.
+- Se documentan las convenciones de signos y las aproximaciones físicas.
+
+## Ejemplo de función
+
+```python
+def energy_level(n: int, Z: int, mu: float) -> float:
+    """Calcula la energía del nivel n de un átomo hidrogenoide.
+
+    Implementa la expresión de Bohr con corrección por masa reducida.
+
+    Args:
+        n: Número cuántico principal, entero positivo.
+        Z: Número atómico del núcleo.
+        mu: Masa reducida electrón-núcleo en kilogramos.
+
+    Returns:
+        float: Energía del estado ligado en julios.
+
+    Raises:
+        TypeError: Si un argumento tiene un tipo no admitido.
+        ValueError: Si n, Z o mu no son positivos.
+    """
+```
+
+## Ejemplo de clase
+
+```python
+class BohrAtom:
+    """Representa un sistema hidrogenoide mediante el modelo de Bohr.
+
+    Args:
+        Z: Número atómico del núcleo.
+        nucleus_mass_kg: Masa nuclear en kilogramos.
+
+    Note:
+        Las magnitudes orbitales describen la coordenada relativa
+        electrón-núcleo y utilizan la masa reducida.
+    """
+```
 
 ## Comentarios
 
-Los comentarios se utilizan para explicar decisiones que no son evidentes, por
- ejemplo el uso de masa reducida, el origen de coordenadas de las animaciones o
-las convenciones de signo. No se comentan mecánicamente todas las líneas: un
-comentario debe añadir contexto que el código por sí solo no expresa.
+Los comentarios explican decisiones físicas o computacionales que no son
+evidentes a partir del código. No se comenta mecánicamente cada instrucción.
 
 ## Notebooks
 
-Cada notebook incluye texto Markdown para desarrollar la teoría y comentarios
-al inicio de las celdas de código para describir su propósito. Los notebooks
-consumen la API pública de `bohr_atom`; no deben duplicar la implementación
-de las ecuaciones físicas.
+Los notebooks acompañan el código con celdas Markdown y comentarios. La lógica
+matemática permanece en `src/bohr_atom`; los notebooks consumen la API pública
+y no duplican las ecuaciones.
 
-## Verificación
+## Verificación automática
 
-Se recomienda revisar periódicamente la documentación con:
+Ruff aplica las reglas de docstrings de Google Style mediante pydocstyle:
 
 ```bash
-ruff check .
-ruff format .
+ruff check src tests
+ruff format --check src tests
 pytest -v
 ```

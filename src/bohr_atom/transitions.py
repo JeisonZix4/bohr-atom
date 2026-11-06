@@ -26,31 +26,31 @@ def transition_properties(
 ) -> dict[str, float | int | str]:
     """Calcula las propiedades del fotón asociado a una transición.
 
-    Parameters
-    ----------
-    n_initial, n_final:
-        Números cuánticos principal inicial y final. Deben ser enteros
-        positivos y diferentes.
-    energy_initial_j, energy_final_j:
-        Energías inicial y final del átomo en julios.
-    h:
-        Constante de Planck en J s.
-    c:
-        Velocidad de la luz en m/s.
-    elementary_charge_c:
-        Magnitud de la carga elemental en culombios, usada para convertir
-        la energía del fotón a electronvoltios.
+    Args:
+        n_initial: Número cuántico principal del estado inicial; debe ser un
+            entero positivo.
+        n_final: Número cuántico principal del estado final; debe ser un entero
+            positivo y distinto de ``n_initial``.
+        energy_initial_j: Energía inicial del átomo en julios.
+        energy_final_j: Energía final del átomo en julios.
+        h: Constante de Planck en julios por segundo.
+        c: Velocidad de la luz en metros por segundo.
+        elementary_charge_c: Magnitud de la carga elemental en culombios, usada
+            para convertir la energía del fotón a electronvoltios.
 
-    Returns
-    -------
-    dict
-        Diccionario con niveles, proceso, variación de energía del átomo,
-        energía del fotón, frecuencia y longitud de onda.
+    Returns:
+        dict[str, float | int | str]: Diccionario con los niveles, el proceso,
+            la variación de energía del átomo, la energía del fotón, la frecuencia
+            y la longitud de onda.
 
-    Notes
-    -----
-    Se utiliza ``delta_energy_atom_j = E_final - E_inicial``. Por tanto,
-    una transición descendente tiene delta negativo y representa emisión.
+    Raises:
+        TypeError: Si un número cuántico o una constante tiene un tipo no admitido.
+        ValueError: Si los niveles son iguales, no son positivos o una constante
+            física no es finita y positiva.
+
+    Note:
+        Se utiliza delta_energy_atom_j = E_final - E_inicial. Por tanto, una
+        transición descendente tiene delta negativo y representa emisión.
     """
     n_initial = validate_positive_integer(n_initial, "n_initial")
     n_final = validate_positive_integer(n_final, "n_final")

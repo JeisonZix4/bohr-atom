@@ -21,17 +21,12 @@ def reduced_mass(electron_mass_kg: float, nucleus_mass_kg: float) -> float:
     La masa reducida permite describir el movimiento relativo de dos cuerpos
     mediante un problema equivalente de una sola partícula.
 
-    Parameters
-    ----------
-    electron_mass_kg:
-        Masa del electrón en kilogramos.
-    nucleus_mass_kg:
-        Masa del núcleo en kilogramos.
+    Args:
+        electron_mass_kg: Masa del electrón en kilogramos.
+        nucleus_mass_kg: Masa del núcleo en kilogramos.
 
-    Returns
-    -------
-    float
-        Masa reducida en kilogramos: ``m_e M / (m_e + M)``.
+    Returns:
+        float: Masa reducida en kilogramos: ``m_e M / (m_e + M)``.
     """
     electron_mass = validate_positive_real(electron_mass_kg, "electron_mass_kg")
     nucleus_mass = validate_positive_real(nucleus_mass_kg, "nucleus_mass_kg")
@@ -52,27 +47,18 @@ def energy_level_joule(
 
     ``E_n = -mu Z² e⁴ / [2 (4 pi epsilon_0)² hbar² n²]``.
 
-    Parameters
-    ----------
-    n:
-        Número cuántico principal, entero positivo.
-    Z:
-        Número atómico, entero positivo.
-    mu:
-        Masa reducida electrón-núcleo en kilogramos.
-    elementary_charge_c:
-        Magnitud de la carga elemental en culombios. Se usa el valor
-        absoluto porque la energía depende de ``e⁴``.
-    epsilon_0:
-        Permitividad eléctrica del vacío en faradios por metro.
-    hbar:
-        Constante de Planck reducida en julios-segundo.
+    Args:
+        n: Número cuántico principal, entero positivo.
+        Z: Número atómico, entero positivo.
+        mu: Masa reducida electrón-núcleo en kilogramos.
+        elementary_charge_c: Magnitud de la carga elemental en culombios. Se
+            utiliza el valor absoluto porque la energía depende de ``e⁴``.
+        epsilon_0: Permitividad eléctrica del vacío en faradios por metro.
+        hbar: Constante de Planck reducida en julios-segundo.
 
-    Returns
-    -------
-    float
-        Energía del estado ligado en julios. El signo negativo indica
-        que el electrón está ligado al núcleo.
+    Returns:
+        float: Energía del estado ligado en julios. El signo negativo indica
+            que el electrón está ligado al núcleo.
     """
     n = validate_positive_integer(n, "n")
     Z = validate_positive_integer(Z, "Z")

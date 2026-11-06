@@ -358,6 +358,7 @@ La clase `BohrAtom` representa un sistema hidrogenoide concreto. Al crear una in
 | `radius(n, unit="m")` | Calcula la separación relativa electrón-núcleo correspondiente al nivel `n`. | `n`: entero positivo; `unit`: `"m"`, `"nm"`, `"pm"` o `"angstrom"`. | Separación relativa en la unidad solicitada. No es la distancia del electrón al centro de masa. |
 | `orbital_angular_frequency(n)` | Calcula la velocidad angular de la coordenada relativa para la órbita circular de Bohr. | `n`: entero positivo. | Velocidad angular en rad/s. No es la frecuencia del fotón de una transición. |
 | `orbital_period(n)` | Calcula el tiempo necesario para completar una revolución, a partir de la velocidad angular orbital. | `n`: entero positivo. | Período orbital en segundos. |
+| `relative_orbital_speed(n)` | Calcula la rapidez tangencial de la coordenada relativa mediante `v_rel = omega * r`. | `n`: entero positivo. | Rapidez relativa en m/s; no es la velocidad visual de reproducción. |
 | `energy_levels(n_max=5, energy_unit="eV")` | Calcula los niveles desde `n=1` hasta `n=n_max`, incluyendo energía y radio orbital. | `n_max`: nivel principal máximo; `energy_unit`: `"J"` o `"eV"`. | Lista de diccionarios con las claves `n`, `energy`, `energy_unit` y `radius_pm`. No requiere Pandas. |
 | `transition(n_initial, n_final)` | Compara las energías inicial y final y determina si el proceso es emisión o absorción. Calcula las propiedades del fotón. | `n_initial`: nivel inicial; `n_final`: nivel final. Ambos deben ser enteros positivos y distintos. | Diccionario con los niveles, el proceso, la variación energética del átomo, la energía del fotón en J y eV, la frecuencia en Hz y la longitud de onda en m y nm. |
 
@@ -367,14 +368,17 @@ La clase `BohrAtom` representa un sistema hidrogenoide concreto. Al crear una in
 |---|---|---|---|
 | `plot_energy_levels(n_max=5, transitions=None, ax=None)` | Dibuja los niveles energéticos hasta `n_max` y conecta los estados con flechas. Si `transitions` es `None`, representa todas las transiciones descendentes entre los niveles mostrados. | `n_max`: nivel máximo; `transitions`: iterable de pares `(n_inicial, n_final)`; `ax`: ejes Matplotlib opcionales. | Tupla `(fig, ax)` con la figura y los ejes de Matplotlib. |
 | `plot_orbits(levels, ax=None)` | Dibuja las circunferencias de los niveles indicados y sitúa el núcleo en el origen de la coordenada relativa. | `levels`: iterable de números cuánticos principales; `ax`: ejes Matplotlib opcionales. | Tupla `(fig, ax)` con la figura y los ejes de Matplotlib. |
+| `plot_orbit_3d(n, phase=0, inclination_deg=25, elev=25, azim=45, show_velocity=True, ax=None)` | Representa en 3D la órbita relativa, el núcleo, el electrón y, opcionalmente, la dirección tangencial de la velocidad. | `n`: nivel; `phase`: fase en rad; `inclination_deg`: inclinación del plano; `elev` y `azim`: cámara; `show_velocity`: vector tangente; `ax`: ejes 3D opcionales. | Tupla `(fig, ax)` con ejes tridimensionales. |
 
 ### Métodos de animación e interacción
 
 | Método | ¿Qué hace? | Parámetros | Resultado |
 |---|---|---|---|
-| `animate_orbit(n, **kwargs)` | Construye una animación de la posición del electrón sobre la circunferencia correspondiente al nivel `n`. Puede mostrar la trayectoria recorrida y un vector tangente. | `n`: nivel; argumentos opcionales: `frames` (fotogramas, por defecto 180), `interval` (intervalo visual en ms, por defecto 30), `revolutions` (vueltas por ciclo), `show_trail` (mostrar trayectoria) y `figsize` (tamaño de figura). | Objeto `matplotlib.animation.FuncAnimation`. En Jupyter puede mostrarse con `HTML(animacion.to_jshtml())`. |
+| `animate_orbit(n, **kwargs)` | Construye una animación 2D de la posición del electrón sobre la circunferencia correspondiente al nivel `n`. | `n`: nivel; argumentos opcionales: `frames`, `interval`, `revolutions`, `show_trail`, `trail_length` y `figsize`. | Objeto `matplotlib.animation.FuncAnimation`; usa blitting si el backend lo soporta. |
+| `animate_orbit_3d(n, **kwargs)` | Construye una animación 3D optimizada de la coordenada relativa, con trayectoria y dirección tangencial. | `n`: nivel; argumentos opcionales: `frames`, `interval`, `revolutions`, `show_trail`, `inclination_deg`, `trail_length`, `orbit_points` y `figsize`. | Objeto `matplotlib.animation.FuncAnimation`, exportable a HTML. |
 | `interactive_energy_diagram(max_n=8)` | Crea controles para seleccionar el máximo de niveles, los estados inicial y final y mostrar/ocultar las demás transiciones descendentes. Actualiza el diagrama sobre un único lienzo. | `max_n`: número cuántico máximo disponible; debe ser al menos 2. | Panel `ipywidgets.VBox` con lienzo `ipympl`. Requiere `%matplotlib widget`. |
-| `interactive_orbit_viewer(n_max=6, **kwargs)` | Crea un visor orbital con selector de `n`, reproducción/pausa, fase angular, velocidad visual y controles para mostrar la trayectoria y el vector tangente. Actualiza un único lienzo interactivo, sin reconstruir la figura en cada fotograma. | `n_max`: nivel máximo; `frames`: posiciones angulares (por defecto 180); `interval`: intervalo base en ms (por defecto 35). | Panel `ipywidgets.VBox` con lienzo `ipympl`. Requiere `%matplotlib widget`. |
+| `interactive_orbit_viewer(n_max=6, **kwargs)` | Crea un visor orbital 2D con selector de `n`, fase, reproducción, velocidad visual y controles de trayectoria y vector tangente. | `n_max`: nivel máximo; `frames`: posiciones angulares; `interval`: intervalo base en ms. | Panel `ipywidgets.VBox` con lienzo `ipympl`. Requiere `%matplotlib widget`. |
+| `interactive_orbit_3d_viewer(n_max=6, **kwargs)` | Crea un visor 3D animado con selector de nivel, fase, inclinación del plano orbital, cámara 3D, trayectoria y vector tangente. Muestra `omega`, frecuencia orbital, rapidez relativa y período físico. | `n_max`: nivel máximo; `frames`: posiciones angulares; `interval`: intervalo visual base. | Panel `ipywidgets.VBox` con lienzo `ipympl`. Requiere `%matplotlib widget`. |
 
 Los métodos de widgets y el lienzo interactivo requieren las dependencias opcionales de Jupyter. Instálalas con:
 
@@ -435,12 +439,14 @@ from IPython.display import HTML, display
 animacion = hidrogeno.animate_orbit(
     n=2,
     frames=180,
-    interval=30,
+    interval=20,
     revolutions=1,
     show_trail=True,
+    trail_length=48,
 )
 
-display(HTML(animacion.to_jshtml()))
+# El vídeo HTML se reproduce en el navegador a 50 fotogramas por segundo.
+display(HTML(animacion.to_jshtml(fps=50)))
 ```
 
 Para abrir el explorador interactivo de transiciones:
@@ -451,19 +457,76 @@ from IPython.display import display
 display(hidrogeno.interactive_energy_diagram(max_n=8))
 ```
 
-Para abrir el visor de órbitas:
+Para abrir el visor de órbitas 2D:
 
 ```python
 display(
     hidrogeno.interactive_orbit_viewer(
         n_max=6,
-        frames=180,
-        interval=35,
+        frames=120,
+        interval=20,
     )
 )
 ```
 
-Las animaciones representan la coordenada relativa electrón-núcleo. El núcleo se coloca en el origen de esa coordenada; no se dibuja por separado su movimiento alrededor del centro de masa. La velocidad de reproducción es visual y está acelerada: el intervalo entre fotogramas no representa el período físico real.
+Para visualizar el átomo en 3D, controlar la inclinación orbital y consultar la velocidad de rotación:
+
+```python
+# Abre el visor tridimensional del nivel seleccionado.
+display(
+    hidrogeno.interactive_orbit_3d_viewer(
+        n_max=6,
+        frames=120,
+        interval=20,
+    )
+)
+```
+
+También se puede generar una vista 3D estática o una animación exportable:
+
+```python
+# Vista 3D estática con vector tangente.
+hidrogeno.plot_orbit_3d(n=2, inclination_deg=35)
+
+# Animación 3D reproducible en HTML.
+animacion_3d = hidrogeno.animate_orbit_3d(
+    n=2,
+    frames=120,
+    interval=20,
+    inclination_deg=35,
+    trail_length=36,
+)
+display(HTML(animacion_3d.to_jshtml(fps=50)))
+```
+
+Las animaciones 2D y 3D representan la coordenada relativa electrón-núcleo. En la vista 3D se puede inclinar el plano orbital y cambiar la cámara. El vector tangente muestra la dirección instantánea de la velocidad relativa; el panel informa la velocidad angular `omega` en rad/s y la rapidez tangencial relativa `v_rel = omega * r` en m/s. La velocidad de reproducción es visual y está acelerada: el intervalo entre fotogramas no representa el período físico real. En un sistema de masa nuclear finita, `v_rel` no coincide exactamente con la rapidez del electrón respecto del centro de masa.
+
+---
+
+
+### Rendimiento de las animaciones
+
+Las animaciones se han optimizado para evitar trabajo repetido por fotograma:
+
+- Las coordenadas de la órbita se precalculan antes de iniciar la reproducción.
+- La trayectoria conserva una estela de longitud limitada (`trail_length`), en lugar de volver a calcular y dibujar todos los puntos recorridos.
+- La animación 2D activa *blitting* cuando el backend lo soporta, de modo que solo se redibujan los artistas móviles.
+- La animación 3D mantiene los artistas y la geometría estática; no modifica los límites, la cámara ni los textos en cada fotograma. Matplotlib 3D necesita redibujar la escena y por ello puede tener menor FPS que la animación 2D.
+- Se recomienda `interval=20` ms como objetivo de 50 FPS y `to_jshtml(fps=50)` para que la reproducción HTML ocurra en el navegador.
+
+Ejemplo recomendado:
+
+```python
+animacion_3d = hidrogeno.animate_orbit_3d(
+    n=2,
+    frames=120,
+    interval=20,
+    trail_length=36,
+)
+display(HTML(animacion_3d.to_jshtml(fps=50)))
+```
+
+El valor de FPS es un objetivo de reproducción, no una garantía. El rendimiento final depende del backend, el navegador, la resolución de la figura y el hardware. Para visualización 3D de alta frecuencia de actualización, un motor WebGL puede ofrecer mejor rendimiento que `mplot3d`.
 
 ---
 
@@ -477,7 +540,7 @@ Los cuadernos de `notebooks/` muestran cómo utilizar la API pública de la bibl
 | `02_niveles_energia_y_radios.ipynb` | Niveles energéticos, relaciones de escala y radios orbitales. |
 | `03_transiciones_y_espectros.ipynb` | Emisión, absorción, energía, frecuencia y longitud de onda. |
 | `04_visualizacion_de_niveles_y_orbitas.ipynb` | Diagramas energéticos y representación de órbitas circulares. |
-| `05_visualizaciones_interactivas_y_animaciones.ipynb` | Widgets, controles de fase, velocidad visual y animaciones orbitales. |
+| `05_visualizaciones_interactivas_y_animaciones.ipynb` | Widgets, controles de fase, velocidad visual y animaciones orbitales 2D y 3D. |
 
 Para abrirlos desde la raíz del repositorio:
 

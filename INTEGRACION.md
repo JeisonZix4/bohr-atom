@@ -35,3 +35,44 @@ El notebook `notebooks/06_patron_strategy.ipynb` se elimina porque la demostraci
 ## Compatibilidad
 
 Los ejemplos que crean `BohrAtom` sin indicar ninguna estrategia siguen utilizando masa reducida. Se recomienda `calculation_strategy=` para código nuevo. El argumento anterior `mass_strategy=` continúa disponible y adapta objetos antiguos que implementaban solamente `calculate(electron_mass_kg, nucleus_mass_kg)`.
+
+
+## Visualización orbital 3D
+
+Esta actualización amplía los archivos existentes sin cambiar sus nombres:
+
+- `src/bohr_atom/visualization.py`: añade `plot_orbit_3d()` para una vista 3D estática.
+- `src/bohr_atom/interactive.py`: añade `animate_orbit_3d()` y `interactive_orbit_3d_viewer()`.
+- `src/bohr_atom/atom.py`: expone `relative_orbital_speed()`, `plot_orbit_3d()`, `animate_orbit_3d()` e `interactive_orbit_3d_viewer()` como métodos de la instancia.
+- `tests/test_3d_visualization.py`: verifica la relación `v_rel = omega * r`, los ejes 3D y la animación.
+- `notebooks/05_visualizaciones_interactivas_y_animaciones.ipynb`: incorpora ejemplos 3D para H y He+.
+- `README.md`: documenta la API y las nuevas opciones.
+
+La visualización 3D sigue la coordenada relativa electrón-núcleo. El panel informa la velocidad angular física, la frecuencia orbital, el período y la rapidez tangencial relativa. La velocidad visual del control de reproducción no modifica los valores físicos.
+
+La vista interactiva utiliza el backend `ipympl` del visor de widgets existente. En Jupyter, ejecutar `%matplotlib widget` antes de crear los visores.
+
+
+## Optimización de animaciones
+
+Esta actualización mejora la fluidez de las animaciones sin cambiar las ecuaciones físicas ni la API principal de `BohrAtom`.
+
+- `interactive.py`: precalcula las coordenadas de las animaciones 2D y 3D; limita la estela con `trail_length`; activa blitting en 2D cuando el backend lo soporta; reduce el tamaño de figura y la resolución de la órbita 3D; y separa los eventos rápidos de fase de los cambios de nivel/cámara.
+- `atom.py`: actualiza los docstrings de los métodos públicos para describir los nuevos argumentos.
+- `tests/test_animation_performance.py`: comprueba que las estelas 2D y 3D tienen longitud máxima fija y valida los parámetros.
+- `notebooks/05_visualizaciones_interactivas_y_animaciones.ipynb`: actualiza ejemplos a `interval=20` y exportación `to_jshtml(fps=50)`.
+- `README.md`: documenta las recomendaciones y limitaciones de rendimiento.
+
+### Parámetros recomendados
+
+```python
+animacion = hidrogeno.animate_orbit_3d(
+    n=2,
+    frames=120,
+    interval=20,
+    trail_length=36,
+)
+display(HTML(animacion.to_jshtml(fps=50)))
+```
+
+`interval=20` y `fps=50` representan objetivos de reproducción. No garantizan esa tasa en todos los equipos. El blitting acelera la animación 2D al redibujar solo los artistas móviles cuando el backend lo soporta. La animación 3D de Matplotlib requiere redibujar el eje tridimensional completo, por lo que se reducen la resolución de la órbita, los elementos dinámicos y el tamaño de la estela. Para escenas 3D que requieran tasas altas sostenidas, debe considerarse un renderizador WebGL.

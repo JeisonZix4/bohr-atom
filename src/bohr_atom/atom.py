@@ -247,6 +247,22 @@ class BohrAtom:
             hbar=self.hbar,
         )
 
+    def relative_orbital_speed(self, n: int) -> float:
+        """Calcula la rapidez tangencial de la coordenada relativa.
+
+        Args:
+            n: Número cuántico principal positivo.
+
+        Returns:
+            float: Rapidez relativa electrón-núcleo en metros por segundo.
+
+        Note:
+            Se calcula como ``v_rel = omega * r``. No debe confundirse con
+            la velocidad visual de la animación ni con la rapidez del fotón.
+        """
+        radius_m = self.radius(n, unit="m")
+        return self.orbital_angular_frequency(n) * radius_m
+
     def orbital_period(self, n: int) -> float:
         """Calcula el período de revolución relativo para el nivel n.
 
@@ -360,6 +376,92 @@ class BohrAtom:
 
         return plot_orbits(self, levels=levels, ax=ax)
 
+    def plot_orbit_3d(
+        self,
+        n: int,
+        phase: float = 0.0,
+        inclination_deg: float = 25.0,
+        elev: float = 25.0,
+        azim: float = 45.0,
+        show_velocity: bool = True,
+        ax=None,
+    ):
+        """Dibuja la órbita relativa del sistema en un sistema de ejes 3D.
+
+        Args:
+            n: Número cuántico principal de la órbita.
+            phase: Fase angular en radianes.
+            inclination_deg: Inclinación del plano orbital en grados.
+            elev: Elevación de la cámara 3D.
+            azim: Azimut de la cámara 3D.
+            show_velocity: Indica si se muestra la dirección de la velocidad.
+            ax: Ejes 3D existentes o ``None`` para crear una figura nueva.
+
+        Returns:
+            tuple: Figura y ejes 3D de Matplotlib.
+
+        Raises:
+            ImportError: Si Matplotlib no está instalado.
+            TypeError: Si los argumentos tienen tipos inválidos.
+            ValueError: Si el nivel o los ángulos no son válidos.
+        """
+        from .visualization import plot_orbit_3d
+
+        return plot_orbit_3d(
+            self,
+            n=n,
+            phase=phase,
+            inclination_deg=inclination_deg,
+            elev=elev,
+            azim=azim,
+            show_velocity=show_velocity,
+            ax=ax,
+        )
+
+    def animate_orbit_3d(self, n: int, **kwargs):
+        """Crea una animación 3D de la rotación orbital del sistema.
+
+        Args:
+            n: Número cuántico principal de la órbita.
+            **kwargs: Argumentos transferidos a
+                ``bohr_atom.interactive.animate_orbit_3d``: frames, interval,
+                revolutions, show_trail, inclination_deg, figsize,
+                trail_length y orbit_points.
+
+        Returns:
+            matplotlib.animation.FuncAnimation: Animación 3D reproducible.
+
+        Raises:
+            ImportError: Si Matplotlib no está instalado.
+            TypeError: Si los argumentos tienen tipos inválidos.
+            ValueError: Si los parámetros no son válidos.
+        """
+        from .interactive import animate_orbit_3d
+
+        return animate_orbit_3d(self, n=n, **kwargs)
+
+    def interactive_orbit_3d_viewer(self, n_max: int = 6, **kwargs):
+        """Crea un visor 3D con controles de fase, nivel y cámara en Jupyter.
+
+        Args:
+            n_max: Mayor número cuántico principal disponible.
+            **kwargs: Argumentos transferidos a
+                ``bohr_atom.interactive.interactive_orbit_3d_viewer`` como
+                frames, interval, trail_length y orbit_points.
+
+        Returns:
+            ipywidgets.VBox: Panel de controles y lienzo Matplotlib 3D.
+
+        Raises:
+            ImportError: Si faltan ipywidgets o el backend ipympl.
+            RuntimeError: Si no está activo el backend interactivo de ipympl.
+            TypeError: Si los parámetros tienen tipos incorrectos.
+            ValueError: Si los parámetros están fuera de sus dominios.
+        """
+        from .interactive import interactive_orbit_3d_viewer
+
+        return interactive_orbit_3d_viewer(self, n_max=n_max, **kwargs)
+
     def animate_orbit(self, n: int, **kwargs):
         """Crea una animación Matplotlib de la coordenada relativa de la órbita n.
 
@@ -370,7 +472,7 @@ class BohrAtom:
             n: Número cuántico principal que se desea animar.
             **kwargs: Argumentos adicionales transferidos a
                 bohr_atom.interactive.animate_orbit, como frames, interval,
-                revolutions, show_trail y figsize.
+                revolutions, show_trail, trail_length y figsize.
 
         Returns:
             matplotlib.animation.FuncAnimation: Animación de la órbita.
@@ -413,7 +515,7 @@ class BohrAtom:
         Args:
             n_max: Nivel principal máximo disponible en el selector.
             **kwargs: Argumentos adicionales transferidos a
-                bohr_atom.interactive.interactive_orbit_viewer, como frames e interval.
+                bohr_atom.interactive.interactive_orbit_viewer, como frames, interval, trail_length y orbit_points.
 
         Returns:
             ipywidgets.VBox: Panel para explorar la fase y la rotación orbital.

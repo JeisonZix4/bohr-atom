@@ -1,748 +1,491 @@
 # Bohr-Atom
 
-**Implementación computacional del modelo atómico de Bohr para átomos hidrogenoides mediante Python.**
+**Biblioteca Python para estudiar y visualizar el modelo atómico de Bohr aplicado a sistemas hidrogenoides.**
 
-[![Python](https://img.shields.io/badge/Python-%3E%3D3.11-blue?logo=python)](https://www.python.org/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Model](https://img.shields.io/badge/Physical%20Model-Bohr-orange)]()
-[![Status](https://img.shields.io/badge/Development-In%20Progress-yellow)]()
+Bohr-Atom implementa los cálculos analíticos del modelo de Bohr para sistemas formados por un núcleo de carga eléctrica `+Ze` y un único electrón de carga `-e`. La biblioteca incorpora la corrección por masa reducida para considerar la masa finita del núcleo y ofrece una interfaz orientada a objetos mediante la clase `BohrAtom`.
+
+Con la biblioteca es posible calcular niveles energéticos, separaciones electrón-núcleo, propiedades de las órbitas circulares, transiciones espectrales y propiedades de los fotones emitidos o absorbidos. También incluye gráficos estáticos, widgets interactivos para Jupyter y animaciones de la coordenada relativa electrón-núcleo.
+
+> **Alcance del modelo:** Bohr-Atom implementa un modelo semiclasico. Las circunferencias y animaciones son representaciones de las órbitas postuladas por Bohr; no representan orbitales, funciones de onda ni trayectorias físicas de la mecánica cuántica moderna.
+
+## Contenido
+
+- [Fundamentos físicos](#fundamentos-físicos)
+- [Funcionalidades](#funcionalidades)
+- [Estructura del proyecto](#estructura-del-proyecto)
+- [Instalación](#instalación)
+- [Ejemplo rápido](#ejemplo-rápido)
+- [API de la clase `BohrAtom`](#api-de-la-clase-bohratom)
+- [Ejemplos de cálculo](#ejemplos-de-cálculo)
+- [Visualización y animaciones](#visualización-y-animaciones)
+- [Cuadernos de Jupyter](#cuadernos-de-jupyter)
+- [Pruebas y calidad del código](#pruebas-y-calidad-del-código)
+- [Supuestos y limitaciones físicas](#supuestos-y-limitaciones-físicas)
+- [Documentación para desarrolladores](#documentación-para-desarrolladores)
+- [Referencias](#referencias)
+- [Licencia](#licencia)
 
 ---
 
-## 1. Descripción del proyecto
+## Fundamentos físicos
 
-**Bohr-Atom** es un proyecto de software científico desarrollado en Python cuyo objetivo es implementar computacionalmente el modelo atómico de Bohr para sistemas hidrogenoides.
+### 1. Sistemas hidrogenoides
 
-El proyecto permite estudiar las propiedades físicas de sistemas constituidos por un núcleo de carga positiva y un único electrón, mediante la resolución analítica de las ecuaciones del modelo de Bohr.
+Un sistema hidrogenoide está formado por un núcleo con carga `+Ze` y un único electrón con carga `-e`. Algunos ejemplos son el hidrógeno (H), el helio ionizado (He⁺), el litio doblemente ionizado (Li²⁺) y el berilio triplemente ionizado (Be³⁺).
 
-La implementación contempla la corrección por masa reducida del sistema electrón-núcleo, permitiendo obtener resultados más precisos que los obtenidos mediante la aproximación de núcleo inmóvil.
+La interacción electrostática entre el electrón y el núcleo se describe mediante el potencial de Coulomb:
 
-El software está diseñado con una arquitectura modular y orientada a objetos. Los cálculos físicos, las propiedades orbitales, las transiciones espectrales y las herramientas de visualización se encuentran organizados en módulos independientes.
+$$
+V(r) = -\frac{Ze^2}{4\pi\varepsilon_0 r}.
+$$
 
-El propósito es construir una herramienta que permita:
+En esta expresión, `Z` es el número atómico, `e` es la magnitud de la carga elemental, `r` es la separación electrón-núcleo y `ε₀` es la permitividad eléctrica del vacío.
 
-- Calcular los niveles energéticos de átomos hidrogenoides.
-- Obtener los radios de las órbitas permitidas.
-- Estudiar las transiciones electrónicas entre estados estacionarios.
-- Calcular las propiedades de los fotones emitidos o absorbidos.
-- Representar gráficamente los niveles de energía y las órbitas del modelo.
-- Explorar las relaciones matemáticas que describen el comportamiento de estos sistemas.
+### 2. Cuantización del momento angular
 
-El proyecto tiene un enfoque educativo, científico y computacional. Busca conectar los fundamentos teóricos de la física atómica con su implementación mediante herramientas de programación científica.
+El segundo postulado de Bohr establece que el momento angular orbital solo puede tomar valores discretos:
 
-## 2. Fundamentos físicos
+$$
+L = \mu v r = n\hbar, \qquad n=1,2,3,\ldots
+$$
 
-### 2.1. Sistemas hidrogenoides
+Donde `μ` es la masa reducida del sistema, `v` es la rapidez relativa, `r` es la separación electrón-núcleo y `n` es el número cuántico principal.
 
-Un sistema hidrogenoide está constituido por un núcleo con carga eléctrica \(+Ze\) y un único electrón con carga \(-e\).
+### 3. Corrección por masa reducida
 
-Donde:
+Como el núcleo también se mueve, el problema de dos cuerpos puede expresarse en la coordenada relativa mediante la masa reducida:
 
-- \(Z\) es el número atómico.
-- \(e\) es la magnitud de la carga elemental.
+$$
+\mu = \frac{m_e M}{m_e+M}.
+$$
 
-Algunos ejemplos de sistemas hidrogenoides son:
+Aquí, `mₑ` representa la masa del electrón y `M` la masa del núcleo. En Bohr-Atom, la masa reducida se calcula durante la creación de cada objeto `BohrAtom` y se utiliza en los cálculos energéticos y orbitales.
 
-| Sistema | Número atómico \(Z\) |
-|:---|:---:|
-| Hidrógeno (H) | 1 |
-| Helio ionizado (He⁺) | 2 |
-| Litio doblemente ionizado (Li²⁺) | 3 |
-| Berilio triplemente ionizado (Be³⁺) | 4 |
+### 4. Niveles de energía
 
-La interacción entre el electrón y el núcleo está descrita por el potencial electrostático de Coulomb:
+La energía del estado estacionario con número cuántico principal `n` es:
 
-\[
-V(r)=-\frac{1}{4\pi\varepsilon_0}\frac{Ze^2}{r}
-\]
+$$
+E_n = -\frac{\mu Z^2 e^4}{2(4\pi\varepsilon_0)^2\hbar^2 n^2}.
+$$
 
-Donde \(\varepsilon_0\) representa la permitividad eléctrica del vacío.
+El signo negativo indica que el electrón está ligado al núcleo. Se toma como referencia `E = 0` cuando la separación electrón-núcleo tiende a infinito. Para un mismo sistema, la magnitud de la energía disminuye como `1/n²` y crece como `Z²`.
 
-### 2.2. Postulados del modelo de Bohr
+### 5. Radios orbitales
 
-El modelo se fundamenta en tres postulados:
+La separación electrón-núcleo correspondiente al nivel `n` es:
 
-**1. Estados estacionarios**
+$$
+r_n = \frac{4\pi\varepsilon_0\hbar^2}{\mu e^2}\,\frac{n^2}{Z}.
+$$
 
-El electrón puede encontrarse en determinadas órbitas estacionarias permitidas, en las cuales no emite radiación electromagnética.
+Por tanto, para un sistema dado, el radio crece proporcionalmente a `n²` y disminuye al aumentar `Z`. El método `radius()` devuelve esta separación relativa, no la distancia del electrón al centro de masa del átomo.
 
-**2. Cuantización del momento angular**
+### 6. Transiciones y fotones
 
-El momento angular orbital está cuantizado:
+Para una transición desde un nivel inicial `nᵢ` hasta un nivel final `n_f`, la variación de energía del átomo se define como:
 
-\[
-L=m_evr=n\hbar
-\]
+$$
+\Delta E_{\mathrm{átomo}} = E_{n_f}-E_{n_i}.
+$$
 
-Donde:
+La energía del fotón se expresa como una magnitud positiva:
 
-- \(m_e\): masa del electrón.
-- \(v\): velocidad orbital.
-- \(r\): radio orbital.
-- \(n\): número cuántico principal.
-- \(\hbar\): constante de Planck reducida.
+$$
+E_\gamma = |\Delta E_{\mathrm{átomo}}| = h\nu = \frac{hc}{\lambda}.
+$$
 
-El número cuántico principal toma valores enteros positivos:
+- **Emisión:** `nᵢ > n_f`. El átomo pasa a un estado de menor energía y emite un fotón.
+- **Absorción:** `nᵢ < n_f`. El átomo absorbe un fotón y pasa a un estado de mayor energía.
 
-\[
-n=1,2,3,\ldots
-\]
+La frecuencia `ν` del fotón no debe confundirse con la velocidad angular orbital `ω` del electrón en el modelo de Bohr: son magnitudes físicas distintas.
 
-**3. Transiciones electrónicas**
+### 7. Cinemática orbital
 
-Las transiciones entre estados estacionarios implican la emisión o absorción de un fotón cuya energía corresponde a la diferencia energética entre los estados involucrados.
+A partir de la dinámica circular y de la cuantización del momento angular, la velocidad angular relativa de la órbita se expresa como:
 
-\[
-E_\gamma=|E_f-E_i|=h\nu
-\]
+$$
+\omega_n = \frac{\mu Z^2 e^4}{(4\pi\varepsilon_0)^2\hbar^3 n^3}.
+$$
 
-Donde \(h\) es la constante de Planck y \(\nu\) es la frecuencia del fotón.
+El período de revolución es:
 
-### 2.3. Corrección por masa reducida
+$$
+T_n = \frac{2\pi}{\omega_n}.
+$$
 
-Para considerar que tanto el electrón como el núcleo se mueven alrededor del centro de masa del sistema, se introduce la masa reducida:
-
-\[
-\mu=\frac{m_eM}{m_e+M}
-\]
-
-Donde \(M\) es la masa del núcleo.
-
-Esta corrección permite describir el movimiento relativo del sistema electrón-núcleo mediante un problema equivalente de una partícula con masa \(\mu\).
-
-### 2.4. Niveles de energía
-
-La energía permitida para un electrón en el nivel cuántico \(n\) está dada por:
-
-\[
-\boxed{
-E_n=
--\frac{\mu Z^2e^4}
-{2(4\pi\varepsilon_0)^2\hbar^2n^2}
-}
-\]
-
-También puede expresarse mediante la energía de Rydberg:
-
-\[
-E_n=-E_R\frac{\mu}{m_e}\frac{Z^2}{n^2}
-\]
-
-Donde:
-
-\[
-E_R\approx13.605693\text{ eV}
-\]
-
-es la energía de Rydberg correspondiente a un núcleo de masa infinita.
-
-### 2.5. Radios orbitales
-
-Los radios permitidos se obtienen mediante:
-
-\[
-\boxed{
-r_n=
-\frac{4\pi\varepsilon_0\hbar^2}
-{\mu e^2}
-\frac{n^2}{Z}
-}
-\]
-
-Para un núcleo de masa infinita, esta expresión se reduce a:
-
-\[
-r_n=a_0\frac{n^2}{Z}
-\]
-
-Donde \(a_0\) es el radio de Bohr.
-
-### 2.6. Transiciones espectrales
-
-Para una transición entre un estado inicial \(n_i\) y un estado final \(n_f\):
-
-\[
-\Delta E_{\text{átomo}}=E_f-E_i
-\]
-
-La energía del fotón es:
-
-\[
-E_\gamma=|\Delta E_{\text{átomo}}|
-\]
-
-La frecuencia y la longitud de onda se calculan mediante:
-
-\[
-\nu=\frac{E_\gamma}{h}
-\]
-
-\[
-\lambda=\frac{c}{\nu}
-\]
-
-El proceso se clasifica como:
-
-- **Emisión:** \(n_i>n_f\).
-- **Absorción:** \(n_i<n_f\).
-
-Estas expresiones permiten estudiar los espectros de emisión y absorción de los sistemas hidrogenoides.
+Estas magnitudes describen la cinemática postulada por el modelo y se utilizan como información física en las animaciones. La reproducción en pantalla está acelerada: el intervalo visual entre fotogramas no equivale al período atómico real.
 
 ---
 
-## 3. Funcionalidades
+## Funcionalidades
 
-El proyecto contempla los siguientes componentes:
+- Cálculo de niveles de energía en julios o electronvoltios.
+- Corrección por masa reducida del núcleo.
+- Cálculo de radios orbitales en metros, nanómetros, picómetros y ångströms.
+- Cálculo de velocidad angular y período orbital.
+- Cálculo de transiciones de emisión y absorción.
+- Obtención de energía, frecuencia y longitud de onda del fotón.
+- Generación de listas de niveles energéticos.
+- Diagramas estáticos de niveles y transiciones.
+- Representación de órbitas circulares en el plano.
+- Widgets de Jupyter para explorar niveles, transiciones, fase y rotación orbital.
+- Animaciones de la coordenada relativa electrón-núcleo.
+- Pruebas automatizadas de propiedades matemáticas y del comportamiento del paquete.
 
-| Funcionalidad | Descripción |
-|:---|:---|
-| Niveles energéticos | Cálculo analítico de la energía para cualquier nivel \(n\). |
-| Masa reducida | Consideración de la masa finita del núcleo. |
-| Radios orbitales | Cálculo de las distancias permitidas electrón-núcleo. |
-| Transiciones electrónicas | Cálculo de diferencias energéticas entre estados. |
-| Propiedades fotónicas | Obtención de energía, frecuencia y longitud de onda. |
-| Diagramas energéticos | Representación gráfica de los estados y sus transiciones. |
-| Órbitas electrónicas | Representación simplificada de las órbitas circulares. |
-| Validación | Pruebas de consistencia matemática y computacional. |
-
-## 4. Arquitectura del proyecto
-
-El proyecto utiliza una arquitectura modular basada en Python y programación orientada a objetos.
-
-La implementación se encuentra organizada mediante la estructura `src`, separando los cálculos físicos de las herramientas de representación gráfica.
+## Estructura del proyecto
 
 ```text
 Bohr-Atom/
-│
 ├── .github/
 │   └── workflows/
 │       └── ci.yml
-│
 ├── docs/
-│   ├── theory.md
-│   ├── equations.md
-│   └── validation.md
-│
+│   └── ESTILO_CODIGO.md
 ├── notebooks/
-│   ├── 01_bohr_model.ipynb
-│   ├── 02_energy_levels.ipynb
-│   ├── 03_spectral_transitions.ipynb
-│   └── 04_visualization.ipynb
-│
+│   ├── 01_introduccion_a_bohr_atom.ipynb
+│   ├── 02_niveles_energia_y_radios.ipynb
+│   ├── 03_transiciones_y_espectros.ipynb
+│   ├── 04_visualizacion_de_niveles_y_orbitas.ipynb
+│   └── 05_visualizaciones_interactivas_y_animaciones.ipynb
 ├── src/
 │   └── bohr_atom/
 │       ├── __init__.py
+│       ├── atom.py
 │       ├── constants.py
-│       ├── validation.py
 │       ├── energy.py
+│       ├── interactive.py
 │       ├── orbit.py
 │       ├── transitions.py
-│       ├── atom.py
+│       ├── validation.py
 │       └── visualization.py
-│
 ├── tests/
-│   ├── test_atom.py
-│   ├── test_energy.py
-│   ├── test_orbit.py
-│   └── test_transitions.py
-│
+├── INTEGRACION.md
 ├── .gitignore
 ├── pyproject.toml
-├── README.md
-└── LICENSE
+└── README.md
 ```
 
-### 4.1. Descripción de los módulos principales
+### Responsabilidad de los módulos
 
-**`constants.py`**
+| Archivo | Responsabilidad |
+|---|---|
+| `constants.py` | Define las constantes físicas y las constantes derivadas utilizadas por la biblioteca. |
+| `validation.py` | Valida tipos, números cuánticos y parámetros físicos de entrada. |
+| `energy.py` | Calcula la masa reducida y los niveles de energía en unidades SI. |
+| `orbit.py` | Calcula radios, velocidad angular y período orbital; también realiza conversiones de unidades de longitud. |
+| `transitions.py` | Calcula la variación energética del átomo y las propiedades del fotón. |
+| `atom.py` | Implementa la clase pública `BohrAtom` y reúne las operaciones del sistema. |
+| `visualization.py` | Genera diagramas estáticos de niveles energéticos y órbitas. |
+| `interactive.py` | Implementa widgets de Jupyter y animaciones orbitales. |
+| `tests/` | Contiene pruebas automatizadas de los módulos y de las relaciones matemáticas. |
+| `notebooks/` | Contiene ejemplos reproducibles de utilización de la biblioteca. |
 
-Contiene las constantes físicas utilizadas en los cálculos:
+---
 
-- Carga elemental.
-- Masa del electrón.
-- Masa del protón.
-- Masa del núcleo de helio-4.
-- Permitividad eléctrica del vacío.
-- Constante de Planck.
-- Constante de Planck reducida.
-- Velocidad de la luz.
-- Radio de Bohr.
-- Energía de Rydberg.
+## Instalación
 
-**`validation.py`**
-
-Contiene funciones para validar los parámetros de entrada, incluyendo los números cuánticos, números atómicos y parámetros físicos positivos.
-
-**`energy.py`**
-
-Implementa las funciones relacionadas con el cálculo de la masa reducida y los niveles de energía.
-
-**`orbit.py`**
-
-Contiene los métodos matemáticos para calcular los radios orbitales y convertirlos entre diferentes unidades.
-
-**`transitions.py`**
-
-Implementa los cálculos de transiciones electrónicas y las propiedades de los fotones emitidos o absorbidos.
-
-**`atom.py`**
-
-Contiene la clase principal `BohrAtom`, que encapsula los parámetros físicos de un sistema hidrogenoide y proporciona una interfaz para realizar los cálculos.
-
-**`visualization.py`**
-
-Contiene las herramientas para construir representaciones gráficas de los niveles energéticos, las transiciones y las órbitas electrónicas.
-
-**`tests/`**
-
-Contiene las pruebas automatizadas que permiten verificar el comportamiento matemático y computacional de los módulos.
-
-**`notebooks/`**
-
-Contiene los cuadernos interactivos utilizados para estudiar y experimentar con el modelo.
-
-## 5. Clase principal: BohrAtom
-
-La clase `BohrAtom` representa un sistema hidrogenoide y encapsula sus principales parámetros físicos.
-
-Entre sus atributos se encuentran:
-
-| Atributo | Descripción | Unidad |
-|:---|:---|:---|
-| `Z` | Número atómico | Adimensional |
-| `nucleus_mass_kg` | Masa del núcleo | kg |
-| `electron_mass_kg` | Masa del electrón | kg |
-| `reduced_mass_kg` | Masa reducida | kg |
-| `electron_charge_c` | Carga del electrón | C |
-| `nuclear_charge_c` | Carga del núcleo | C |
-| `epsilon_0` | Permitividad del vacío | F/m |
-| `planck_constant` | Constante de Planck | J·s |
-| `hbar` | Constante de Planck reducida | J·s |
-| `speed_of_light` | Velocidad de la luz | m/s |
-
-La clase ofrece los siguientes métodos:
-
-| Método | Descripción |
-|:---|:---|
-| `energy(n, unit)` | Calcula la energía del nivel \(n\). |
-| `radius(n, unit)` | Calcula el radio orbital correspondiente. |
-| `energy_levels(n_max, energy_unit)` | Genera una lista de los niveles energéticos. |
-| `transition(n_initial, n_final)` | Calcula las propiedades de una transición. |
-| `plot_energy_levels(n_max, transitions)` | Representa los niveles y las transiciones. |
-| `plot_orbits(levels)` | Dibuja las órbitas electrónicas. |
-
-## 6. Instalación
-
-### 6.1. Requisitos
-
-Se requieren:
+### Requisitos
 
 - Python 3.11 o superior.
-- pip.
-- Git.
-- Entorno virtual de Python.
+- `pip`.
+- Git, si se instala desde el repositorio.
 
-El proyecto utiliza las siguientes dependencias:
+### Instalar desde GitHub
 
-| Biblioteca | Función |
-|:---|:---|
-| Matplotlib | Representación gráfica. |
-| NumPy | Herramientas numéricas. |
-| Pandas | Gestión de datos tabulares en los experimentos, cuando sea necesario. |
-| pytest | Pruebas automatizadas. |
-| pytest-cov | Análisis de cobertura de pruebas. |
-| Ruff | Análisis y formato del código. |
-| JupyterLab | Desarrollo de cuadernos interactivos. |
-
-### 6.2. Clonar el repositorio
+Reemplaza `TU_USUARIO` por el usuario u organización propietaria del repositorio:
 
 ```bash
-git clone https://github.com/USER/Bohr-Atom.git
-
+git clone https://github.com/TU_USUARIO/Bohr-Atom.git
 cd Bohr-Atom
-```
-
-Sustituir `USER` por el nombre de usuario correspondiente de GitHub.
-
-### 6.3. Crear un entorno virtual
-
-```bash
 python3 -m venv .venv
-```
-
-Activar el entorno virtual:
-
-```bash
 source .venv/bin/activate
+python -m pip install --upgrade pip
 ```
 
-En Windows:
-
-```powershell
-.venv\Scripts\activate
-```
-
-### 6.4. Actualizar herramientas de instalación
-
-```bash
-python -m pip install --upgrade pip setuptools wheel
-```
-
-### 6.5. Instalar el proyecto
-
-Se recomienda utilizar una instalación editable:
+Instala la biblioteca y las herramientas de desarrollo:
 
 ```bash
 python -m pip install -e ".[dev]"
 ```
 
-Esta modalidad permite modificar el código fuente y utilizar inmediatamente los cambios sin reinstalar el paquete.
+Para trabajar con notebooks y widgets interactivos, instala también las dependencias opcionales:
 
-## 7. Ejemplos de utilización
+```bash
+python -m pip install -e ".[dev,notebooks]"
+```
 
-### 7.1. Crear un sistema hidrogenoide
+> El nombre de distribución (el que se utiliza con `pip`) está definido por `project.name` en `pyproject.toml`. El nombre de importación de Python es `bohr_atom`; por eso se escribe `from bohr_atom import BohrAtom`. En la configuración actual, el nombre de distribución es `bohr-atom-toolkit`.
 
-Se puede importar la clase principal e instanciar un átomo de hidrógeno:
+### Instalar desde PyPI
+
+Cuando la distribución esté publicada en PyPI, podrá instalarse con:
+
+```bash
+python -m pip install bohr-atom-toolkit
+```
+
+Para utilizar los widgets y los notebooks, instala además las dependencias correspondientes o instala el proyecto desde el repositorio con el extra `notebooks`.
+
+---
+
+## Ejemplo rápido
 
 ```python
 from bohr_atom import BohrAtom, PROTON_MASS_KG
 
-hydrogen = BohrAtom(
+# Crea un sistema hidrogenoide de hidrógeno.
+hidrogeno = BohrAtom(
     Z=1,
     nucleus_mass_kg=PROTON_MASS_KG,
-    name="Hydrogen"
+    name="Hidrógeno",
 )
 
-print(hydrogen)
+# Calcula la energía del estado fundamental en electronvoltios.
+print(hidrogeno.energy(1, unit="eV"))
+
+# Calcula la separación electrón-núcleo del segundo nivel en picómetros.
+print(hidrogeno.radius(2, unit="pm"))
+
+# Calcula las propiedades del fotón para la transición 3 -> 2.
+print(hidrogeno.transition(3, 2))
 ```
 
-Para construir un ion de helio He⁺:
+Para crear un ion de helio He⁺:
 
 ```python
-from bohr_atom import (
-    BohrAtom,
-    HELIUM4_NUCLEUS_MASS_KG
-)
+from bohr_atom import BohrAtom, HELIUM4_NUCLEUS_MASS_KG
 
-helium_ion = BohrAtom(
+helio_ionizado = BohrAtom(
     Z=2,
     nucleus_mass_kg=HELIUM4_NUCLEUS_MASS_KG,
-    name="Helium ion"
+    name="Helio ionizado (He⁺)",
+)
+
+print(helio_ionizado.energy(1, unit="eV"))
+```
+
+---
+
+## API de la clase `BohrAtom`
+
+La clase `BohrAtom` representa un sistema hidrogenoide concreto. Al crear una instancia se validan los parámetros físicos, se asignan las cargas del núcleo y del electrón y se calcula la masa reducida. Los métodos de cálculo utilizan esos atributos para evitar que el usuario tenga que proporcionar las mismas constantes en cada operación.
+
+### Constructor y representación
+
+| Método | ¿Qué hace? | Parámetros | Resultado |
+|---|---|---|---|
+| `__init__(Z, nucleus_mass_kg, name, electron_mass_kg)` | Inicializa el sistema, valida los parámetros, asigna las cargas eléctricas y calcula la masa reducida. | `Z`: número atómico entero positivo; `nucleus_mass_kg`: masa nuclear en kg; `name`: nombre descriptivo; `electron_mass_kg`: masa electrónica en kg. | Una instancia de `BohrAtom`. |
+| `__repr__()` | Devuelve una representación textual breve del objeto, útil para inspección y depuración. | No recibe argumentos adicionales del usuario. | Cadena con el nombre, el número atómico y la masa reducida. |
+
+### Métodos de cálculo físico
+
+| Método | ¿Qué hace? | Parámetros | Resultado y unidades |
+|---|---|---|---|
+| `energy(n, unit="eV")` | Calcula la energía del estado estacionario con número cuántico principal `n`, utilizando la masa reducida de la instancia. | `n`: entero positivo; `unit`: `"J"` o `"eV"`. | Energía del nivel en julios o electronvoltios. Es negativa para estados ligados. |
+| `radius(n, unit="m")` | Calcula la separación relativa electrón-núcleo correspondiente al nivel `n`. | `n`: entero positivo; `unit`: `"m"`, `"nm"`, `"pm"` o `"angstrom"`. | Separación relativa en la unidad solicitada. No es la distancia del electrón al centro de masa. |
+| `orbital_angular_frequency(n)` | Calcula la velocidad angular de la coordenada relativa para la órbita circular de Bohr. | `n`: entero positivo. | Velocidad angular en rad/s. No es la frecuencia del fotón de una transición. |
+| `orbital_period(n)` | Calcula el tiempo necesario para completar una revolución, a partir de la velocidad angular orbital. | `n`: entero positivo. | Período orbital en segundos. |
+| `energy_levels(n_max=5, energy_unit="eV")` | Calcula los niveles desde `n=1` hasta `n=n_max`, incluyendo energía y radio orbital. | `n_max`: nivel principal máximo; `energy_unit`: `"J"` o `"eV"`. | Lista de diccionarios con las claves `n`, `energy`, `energy_unit` y `radius_pm`. No requiere Pandas. |
+| `transition(n_initial, n_final)` | Compara las energías inicial y final y determina si el proceso es emisión o absorción. Calcula las propiedades del fotón. | `n_initial`: nivel inicial; `n_final`: nivel final. Ambos deben ser enteros positivos y distintos. | Diccionario con los niveles, el proceso, la variación energética del átomo, la energía del fotón en J y eV, la frecuencia en Hz y la longitud de onda en m y nm. |
+
+### Métodos de visualización estática
+
+| Método | ¿Qué hace? | Parámetros | Resultado |
+|---|---|---|---|
+| `plot_energy_levels(n_max=5, transitions=None, ax=None)` | Dibuja los niveles energéticos hasta `n_max` y conecta los estados con flechas. Si `transitions` es `None`, representa todas las transiciones descendentes entre los niveles mostrados. | `n_max`: nivel máximo; `transitions`: iterable de pares `(n_inicial, n_final)`; `ax`: ejes Matplotlib opcionales. | Tupla `(fig, ax)` con la figura y los ejes de Matplotlib. |
+| `plot_orbits(levels, ax=None)` | Dibuja las circunferencias de los niveles indicados y sitúa el núcleo en el origen de la coordenada relativa. | `levels`: iterable de números cuánticos principales; `ax`: ejes Matplotlib opcionales. | Tupla `(fig, ax)` con la figura y los ejes de Matplotlib. |
+
+### Métodos de animación e interacción
+
+| Método | ¿Qué hace? | Parámetros | Resultado |
+|---|---|---|---|
+| `animate_orbit(n, **kwargs)` | Construye una animación de la posición del electrón sobre la circunferencia correspondiente al nivel `n`. Puede mostrar la trayectoria recorrida y un vector tangente. | `n`: nivel; argumentos opcionales: `frames` (fotogramas, por defecto 180), `interval` (intervalo visual en ms, por defecto 30), `revolutions` (vueltas por ciclo), `show_trail` (mostrar trayectoria) y `figsize` (tamaño de figura). | Objeto `matplotlib.animation.FuncAnimation`. En Jupyter puede mostrarse con `HTML(animacion.to_jshtml())`. |
+| `interactive_energy_diagram(max_n=8)` | Crea controles para seleccionar el número máximo de niveles y los estados inicial y final. Actualiza el diagrama y presenta la clasificación del proceso y las propiedades del fotón. | `max_n`: número cuántico máximo disponible en los controles; debe ser al menos 2. | Panel `ipywidgets.VBox` compatible con JupyterLab. |
+| `interactive_orbit_viewer(n_max=6, **kwargs)` | Crea un visor con selector del nivel `n`, control de fase, reproducción y opción para mostrar u ocultar la trayectoria. | `n_max`: nivel máximo del selector; `frames`: cantidad de posiciones angulares (por defecto 180); `interval`: intervalo visual entre posiciones en ms (por defecto 35). | Panel `ipywidgets.VBox` compatible con JupyterLab. |
+
+Los tres últimos métodos requieren las dependencias opcionales de Jupyter. Instálalas con:
+
+```bash
+python -m pip install -e ".[notebooks]"
+```
+
+---
+
+## Ejemplos de cálculo
+
+### Consultar varios niveles energéticos
+
+```python
+# Calcula los niveles n=1, 2, 3, 4 y 5.
+niveles = hidrogeno.energy_levels(n_max=5, energy_unit="eV")
+
+for nivel in niveles:
+    print(
+        f"n={nivel['n']}: "
+        f"E={nivel['energy']:.6f} {nivel['energy_unit']}, "
+        f"r={nivel['radius_pm']:.4f} pm"
+    )
+```
+
+### Analizar una transición
+
+```python
+# La transición 3 -> 2 es descendente y corresponde a emisión.
+resultado = hidrogeno.transition(n_initial=3, n_final=2)
+
+print("Proceso:", resultado["process"])
+print("Energía del fotón:", resultado["photon_energy_ev"], "eV")
+print("Frecuencia:", resultado["frequency_hz"], "Hz")
+print("Longitud de onda:", resultado["wavelength_nm"], "nm")
+```
+
+---
+
+## Visualización y animaciones
+
+Los gráficos estáticos se pueden crear directamente desde una instancia:
+
+```python
+# Dibuja los primeros cinco niveles y las transiciones descendentes.
+hidrogeno.plot_energy_levels(n_max=5)
+
+# Dibuja las órbitas correspondientes a n=1, 2, 3 y 4.
+hidrogeno.plot_orbits(levels=[1, 2, 3, 4])
+```
+
+Para generar una animación en Jupyter:
+
+```python
+from IPython.display import HTML, display
+
+# Genera una animación de la órbita n=2.
+animacion = hidrogeno.animate_orbit(
+    n=2,
+    frames=180,
+    interval=30,
+    revolutions=1,
+    show_trail=True,
+)
+
+display(HTML(animacion.to_jshtml()))
+```
+
+Para abrir el explorador interactivo de transiciones:
+
+```python
+from IPython.display import display
+
+display(hidrogeno.interactive_energy_diagram(max_n=8))
+```
+
+Para abrir el visor de órbitas:
+
+```python
+display(
+    hidrogeno.interactive_orbit_viewer(
+        n_max=6,
+        frames=180,
+        interval=35,
+    )
 )
 ```
 
-### 7.2. Calcular niveles de energía
+Las animaciones representan la coordenada relativa electrón-núcleo. El núcleo se coloca en el origen de esa coordenada; no se dibuja por separado su movimiento alrededor del centro de masa. La velocidad de reproducción es visual y está acelerada: el intervalo entre fotogramas no representa el período físico real.
 
-La energía se puede obtener en electronvoltios o julios:
+---
 
-```python
-E1 = hydrogen.energy(1, unit="eV")
+## Cuadernos de Jupyter
 
-E2 = hydrogen.energy(2, unit="eV")
+Los cuadernos de `notebooks/` muestran cómo utilizar la API pública de la biblioteca. Los cálculos se realizan mediante `BohrAtom`; los notebooks no mantienen una implementación paralela de las ecuaciones.
 
-E3 = hydrogen.energy(3, unit="eV")
+| Notebook | Contenido |
+|---|---|
+| `01_introduccion_a_bohr_atom.ipynb` | Importación, creación de sistemas hidrogenoides y primeros cálculos. |
+| `02_niveles_energia_y_radios.ipynb` | Niveles energéticos, relaciones de escala y radios orbitales. |
+| `03_transiciones_y_espectros.ipynb` | Emisión, absorción, energía, frecuencia y longitud de onda. |
+| `04_visualizacion_de_niveles_y_orbitas.ipynb` | Diagramas energéticos y representación de órbitas circulares. |
+| `05_visualizaciones_interactivas_y_animaciones.ipynb` | Widgets, controles de fase y animaciones orbitales. |
 
-print(f"E1 = {E1:.6f} eV")
-print(f"E2 = {E2:.6f} eV")
-print(f"E3 = {E3:.6f} eV")
+Para abrirlos desde la raíz del repositorio:
+
+```bash
+jupyter lab
 ```
 
-También se puede generar una colección de niveles:
+Asegúrate de que JupyterLab utiliza el entorno virtual donde instalaste `bohr-atom` y sus dependencias opcionales.
 
-```python
-levels = hydrogen.energy_levels(
-    n_max=5,
-    energy_unit="eV"
-)
+---
 
-for level in levels:
-    print(level)
-```
+## Pruebas y calidad del código
 
-### 7.3. Calcular radios orbitales
-
-El radio se puede obtener en diferentes unidades:
-
-```python
-r1 = hydrogen.radius(1, unit="pm")
-
-r2 = hydrogen.radius(2, unit="pm")
-
-r3 = hydrogen.radius(3, unit="pm")
-
-print(f"r1 = {r1:.4f} pm")
-print(f"r2 = {r2:.4f} pm")
-print(f"r3 = {r3:.4f} pm")
-```
-
-Unidades disponibles:
-
-- `m`: metros.
-- `nm`: nanómetros.
-- `pm`: picómetros.
-- `angstrom`: ángstroms.
-
-### 7.4. Calcular transiciones electrónicas
-
-Para estudiar una transición desde \(n_i=3\) hasta \(n_f=2\):
-
-```python
-result = hydrogen.transition(3, 2)
-
-for key, value in result.items():
-    print(f"{key}: {value}")
-```
-
-El resultado proporciona:
-
-- Estado inicial.
-- Estado final.
-- Tipo de proceso.
-- Variación energética del átomo.
-- Energía del fotón en julios.
-- Energía del fotón en electronvoltios.
-- Frecuencia.
-- Longitud de onda en metros.
-- Longitud de onda en nanómetros.
-
-La transición \(3\rightarrow2\) corresponde a una línea de la serie de Balmer.
-
-### 7.5. Representar los niveles de energía
-
-```python
-hydrogen.plot_energy_levels(
-    n_max=5
-)
-```
-
-También es posible seleccionar las transiciones que se desean representar:
-
-```python
-hydrogen.plot_energy_levels(
-    n_max=5,
-    transitions=[
-        (3, 2),
-        (4, 2),
-        (5, 2)
-    ]
-)
-```
-
-Las transiciones se representan mediante flechas que conectan los niveles energéticos.
-
-### 7.6. Representar las órbitas electrónicas
-
-```python
-hydrogen.plot_orbits(
-    levels=[1, 2, 3, 4]
-)
-```
-
-Esta representación muestra las órbitas circulares correspondientes a distintos valores del número cuántico principal.
-
-**Nota:** estas órbitas son una representación conceptual propia del modelo de Bohr. No deben interpretarse como trayectorias físicas del electrón en la mecánica cuántica moderna.
-
-## 8. Pruebas y validación
-
-La validación del software constituye una parte fundamental del proyecto.
-
-Se utiliza `pytest` para comprobar las relaciones matemáticas y el comportamiento de las funciones implementadas.
-
-Entre las propiedades que se pretende verificar se encuentran:
-
-### 8.1. Energía negativa en estados ligados
-
-\[
-E_n<0
-\]
-
-### 8.2. Dependencia energética con el número cuántico
-
-\[
-E_n\propto\frac{1}{n^2}
-\]
-
-Por tanto:
-
-\[
-E_2=\frac{E_1}{4}
-\]
-
-\[
-E_3=\frac{E_1}{9}
-\]
-
-### 8.3. Dependencia del radio orbital
-
-\[
-r_n\propto n^2
-\]
-
-### 8.4. Conservación de la energía en las transiciones
-
-\[
-E_\gamma=|\Delta E_{\text{átomo}}|
-\]
-
-### 8.5. Relaciones entre energía, frecuencia y longitud de onda
-
-\[
-E_\gamma=h\nu
-\]
-
-\[
-c=\lambda\nu
-\]
-
-Para ejecutar las pruebas:
+Ejecuta las pruebas desde la raíz del repositorio:
 
 ```bash
 pytest -v
 ```
 
-Para generar un informe de cobertura:
+Para obtener un informe de cobertura:
 
 ```bash
 pytest --cov=bohr_atom --cov-report=term-missing
 ```
 
-Para analizar la calidad del código:
+Para revisar la calidad del código y el estilo de los docstrings:
 
 ```bash
 ruff check .
 ```
 
-Para verificar el formato:
+Para comprobar el formato:
 
 ```bash
 ruff format --check .
 ```
 
-Las pruebas automáticas permiten detectar errores de implementación y verificar propiedades matemáticas. Sin embargo, no sustituyen la comparación con resultados analíticos de referencia ni la validación frente a datos experimentales.
-
-## 9. Desarrollo y control de versiones
-
-El proyecto utiliza Git para gestionar su historial de desarrollo y GitHub como plataforma de alojamiento.
-
-Se recomienda trabajar mediante ramas independientes para cada funcionalidad.
-
-Convención de nombres:
-
-| Prefijo | Propósito |
-|:---|:---|
-| `feat/` | Nuevas funcionalidades. |
-| `fix/` | Corrección de errores. |
-| `test/` | Incorporación de pruebas. |
-| `docs/` | Modificaciones de documentación. |
-| `refactor/` | Mejoras estructurales. |
-| `chore/` | Configuración y mantenimiento. |
-
-Ejemplo de flujo de desarrollo:
-
-```bash
-git switch main
-
-git pull --ff-only origin main
-
-git switch -c feat/new-functionality
-
-# Desarrollo y pruebas
-
-git add .
-
-git commit -m "feat: implement new functionality"
-
-git push -u origin feat/new-functionality
-```
-
-Posteriormente se crea un Pull Request hacia `main`, donde se revisan e integran los cambios.
-
-El proyecto también contempla incorporar:
-
-- Integración continua mediante GitHub Actions.
-- Validación automática de pruebas.
-- Revisión del código mediante Ruff.
-- Protección de la rama principal.
-- Versionamiento semántico.
-- Etiquetas y publicaciones de versiones.
-
-## 10. Aproximaciones y limitaciones físicas
-
-El modelo de Bohr constituye una aproximación histórica importante para comprender la cuantización de la energía y los espectros de sistemas hidrogenoides.
-
-Sin embargo, tiene limitaciones que deben considerarse al interpretar sus resultados.
-
-La implementación actual contempla:
-
-- Sistemas de un único electrón.
-- Interacción electrostática de Coulomb.
-- Núcleo puntual.
-- Aproximación no relativista.
-- Cuantización del momento angular.
-- Corrección por masa reducida.
-
-No contempla:
-
-- Correcciones relativistas.
-- Estructura fina.
-- Estructura hiperfina.
-- Espín electrónico.
-- Interacción espín-órbita.
-- Desplazamiento de Lamb.
-- Correcciones por tamaño nuclear.
-- Funciones de onda y distribuciones de probabilidad de la mecánica cuántica.
-
-Por consiguiente, los resultados deben interpretarse dentro del dominio de validez del modelo de Bohr.
-
-La implementación no pretende sustituir una solución de la ecuación de Schrödinger, sino proporcionar una herramienta computacional para estudiar el modelo y sus predicciones analíticas.
-
-## 11. Posibles extensiones
-
-Se plantean las siguientes líneas de desarrollo:
-
-**Espectros atómicos**
-
-- Implementación de las series de Lyman, Balmer, Paschen y otras.
-- Construcción de diagramas espectrales.
-- Comparación con valores experimentales.
-- Estudio de transiciones y reglas de selección.
-
-**Ampliación del modelo físico**
-
-- Comparación con la solución de la ecuación de Schrödinger.
-- Estudio de los números cuánticos del modelo cuántico moderno.
-- Incorporación de correcciones relativistas.
-- Estudio de la estructura fina del hidrógeno.
-
-**Desarrollo computacional**
-
-- Mejoras en la arquitectura y API.
-- Incorporación de documentación automática.
-- Ampliación de las pruebas científicas.
-- Desarrollo de interfaces interactivas.
-- Publicación del paquete para su instalación mediante pip.
-
-**Reproducibilidad científica**
-
-- Incorporación de fuentes bibliográficas.
-- Registro de versiones de constantes físicas.
-- Validación con resultados de referencia.
-- Documentación de las aproximaciones y errores numéricos.
-
-## 12. Referencias bibliográficas
-
-1. Bohr, N. (1913). On the constitution of atoms and molecules. *The London, Edinburgh, and Dublin Philosophical Magazine and Journal of Science, 26*(151), 1–25. https://doi.org/10.1080/14786441308634955
-
-2. Ling, S. J., Sanny, J., & Moebs, W. (2016). *University Physics, Volume 3*. OpenStax. Sección 6.4: Bohr's Model of the Hydrogen Atom. https://openstax.org/books/university-physics-volume-3/pages/6-4-bohrs-model-of-the-hydrogen-atom
-
-3. National Institute of Standards and Technology (NIST). (2022). *CODATA Recommended Values of the Fundamental Physical Constants*. https://physics.nist.gov/cuu/pdf/JPCRD2022CODATA.pdf
-
-## 13. Licencia
-
-Este proyecto está destinado al desarrollo y estudio de herramientas computacionales para física atómica.
-
-La licencia y las condiciones de distribución se encuentran especificadas en el archivo `LICENSE`.
+La configuración de Ruff utiliza convenciones de docstrings Google Style. Las pruebas comprueban propiedades matemáticas y el comportamiento del software; conviene complementarlas con comparaciones frente a referencias analíticas y datos espectroscópicos experimentales.
 
 ---
 
-**Bohr-Atom — Física teórica, programación científica y computación.**
+## Supuestos y limitaciones físicas
+
+La implementación supone:
+
+- Un sistema con un único electrón.
+- Interacción electrostática de Coulomb.
+- Núcleo puntual y masa nuclear finita incorporada mediante la masa reducida.
+- Aproximación no relativista.
+- Órbitas circulares y cuantización del momento angular según los postulados de Bohr.
+
+No incluye correcciones relativistas, estructura fina, estructura hiperfina, espín, interacción espín-órbita, desplazamiento de Lamb, retroceso nuclear durante la emisión ni correcciones por tamaño nuclear.
+
+Los radios calculados representan la coordenada relativa electrón-núcleo. Los dibujos de circunferencias y las animaciones ilustran el modelo de Bohr; no representan orbitales ni trayectorias de la mecánica cuántica moderna.
+
+---
+
+## Documentación para desarrolladores
+
+El repositorio contiene dos documentos auxiliares con propósitos diferentes:
+
+- [`docs/ESTILO_CODIGO.md`](docs/ESTILO_CODIGO.md): **guía permanente de estilo**. Define cómo escribir docstrings Google Style, documentar argumentos, valores de retorno, excepciones y unidades físicas, y cómo mantener el formato del código. Debe conservarse para mantener la coherencia al añadir módulos o revisar contribuciones.
+- [`INTEGRACION.md`](INTEGRACION.md): **guía operativa de integración**. Explica cómo incorporar una entrega o actualización concreta al repositorio, qué archivos revisar, cómo instalar dependencias, ejecutar pruebas y crear un Pull Request. No interviene en la instalación ni en la ejecución de la biblioteca. Puede conservarse como registro del procedimiento o eliminarse cuando la integración descrita ya no sea necesaria.
+
+Los módulos, clases y funciones utilizan docstrings en español con formato Google Style, siguiendo las convenciones generales de PEP 257. Se utilizan las secciones `Args`, `Returns`, `Raises`, `Attributes` y `Note` cuando corresponda. Las unidades de las magnitudes físicas se indican explícitamente.
+
+---
+
+## Referencias
+
+1. Bohr, N. (1913). On the constitution of atoms and molecules. *The London, Edinburgh, and Dublin Philosophical Magazine and Journal of Science, 26*(151), 1–25. https://doi.org/10.1080/14786441308634955
+2. Ling, S. J., Sanny, J., & Moebs, W. (2016). *University Physics, Volume 3*. OpenStax. Sección 6.4: Bohr's Model of the Hydrogen Atom. https://openstax.org/books/university-physics-volume-3/pages/6-4-bohrs-model-of-the-hydrogen-atom
+3. National Institute of Standards and Technology. (2022). *CODATA Recommended Values of the Fundamental Physical Constants*. https://physics.nist.gov/cuu/pdf/JPCRD2022CODATA.pdf
+
+---
+
+## Licencia
+
+La licencia de distribución debe definirse explícitamente mediante un archivo `LICENSE` y declararse en `pyproject.toml`. No se debe asumir una licencia por el solo hecho de publicar el código en GitHub o PyPI.
+
+---
+
+**Bohr-Atom — Física atómica, programación científica y computación.**
